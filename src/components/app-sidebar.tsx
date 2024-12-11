@@ -5,7 +5,6 @@ import {
   SidebarHeader,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
@@ -14,6 +13,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { navItems } from "@/constants/data";
 import { Icons } from "@/components/icons";
@@ -25,9 +25,11 @@ import {
   CreditCard,
   GalleryVerticalEnd,
   LogOut,
-  Server
-} from 'lucide-react'
-import Link from 'next/link';
+  Plus,
+  Power,
+  Server,
+} from "lucide-react";
+import Link from "next/link";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -116,6 +118,16 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <Power />
+              <span>Log Out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

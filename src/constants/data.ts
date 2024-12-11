@@ -124,7 +124,7 @@ export type Product = {
 export const navItems: NavItem[] = [
   {
     title: 'Dashboard',
-    url: '/admin/overview',
+    url: '/admin/overview/',
     icon: 'dashboard',
     isActive: false,
     shortcut: ['d', 'd'],

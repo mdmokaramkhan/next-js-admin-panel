@@ -1,3 +1,6 @@
+import { getAuthToken, removeAuthToken } from "@/utils/cookies";
+import { redirect } from "next/navigation";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function apiRequest(
@@ -7,7 +10,15 @@ export async function apiRequest(
 ) {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "Cache-Control": "no-cache", // Prevent browser caching
+    Pragma: "no-cache", // Compatibility with HTTP/1.0
   };
+
+  // Retrieve token and set Authorization header if available
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/admin/${endpoint}`, {
@@ -23,7 +34,7 @@ export async function apiRequest(
 
     return await response.json();
   } catch (error) {
+    removeAuthToken();
     throw new Error((error as Error).message);
   }
 }
-

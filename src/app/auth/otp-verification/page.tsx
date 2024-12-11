@@ -21,20 +21,22 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { Lock, Loader2 } from "lucide-react";
-import { setAuthToken } from "@/utils/cookies";
+import { getAuthToken, setAuthToken } from "@/utils/cookies";
 
-const  OTPVerification = () => {
+const OTPVerification = () => {
   const [otp, setOtp] = useState("");
   const searchParams = useSearchParams();
   const tempToken = searchParams?.get("tempToken");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  
   useEffect(() => {
+    if(getAuthToken()) {
+      router.push("/admin/");
+    }
     if (!tempToken) {
-      toast("Invalid session. Please log in again.", {
-        className: "bg-red-500",
-      });
+      toast.error("Invalid session. Please log in again.");
       router.push("/auth/login");
     }
   }, [tempToken, router]);
@@ -49,10 +51,10 @@ const  OTPVerification = () => {
       if (data.token) {
         // Store the access token in cookies
         setAuthToken(data.token);
-  
+
         // Navigate to the dashboard or protected page
         toast.success("Login successful!", { position: "top-right" });
-        router.push("/dashboard");
+        router.push("/admin/overview");
       } else {
         throw new Error("Access token not provided");
       }
@@ -120,7 +122,7 @@ const  OTPVerification = () => {
       </Card>
     </div>
   );
-}
+};
 
 export default function PageWrapper() {
   return (

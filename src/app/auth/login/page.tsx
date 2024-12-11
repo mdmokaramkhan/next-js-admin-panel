@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,23 @@ import { ModeToggle } from "@/components/ThemeToggle";
 import { apiRequest } from "@/lib/api";
 import { LogInIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getAuthToken } from "@/utils/cookies";
 
 export default function Page() {
+
   const [username, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // Check for token on mount and redirect if it exists
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token) {
+      router.push("/admin"); // Redirect to /admin if token exists
+    }
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

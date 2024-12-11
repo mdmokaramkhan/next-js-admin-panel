@@ -1,17 +1,24 @@
-import Cookies from "js-cookie";
+import  Cookies  from "js-cookie";
 
 export const setAuthToken = (token: string) => {
+  console.log("Setting token:", token);
   Cookies.set("accessToken", token, {
-    expires: 7, // Token valid for 7 days
-    secure: true, // Ensure it's a secure cookie
-    sameSite: "Strict", // Protect against CSRF
+    expires: 7,
+    secure: false,
+    sameSite: "Strict",
+    path: "/",
   });
+  console.log("Current token:", Cookies.get("accessToken"));
 };
 
 export const getAuthToken = () => {
-  return Cookies.get("accessToken");
+  const token = Cookies.get("accessToken");
+  console.log("Getting token:", token);
+  return token;
 };
 
 export const removeAuthToken = () => {
-  Cookies.remove("accessToken");
+  console.log("Removing token");
+  Cookies.remove("accessToken", { path: "/" });
+  window.location.href = "/auth/login";
 };

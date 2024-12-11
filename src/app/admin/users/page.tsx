@@ -12,6 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import PageContainer from "@/components/page-container";
+import { Separator } from "@/components/ui/separator";
+import { Heading } from "@/components/ui/heading";
+import { removeAuthToken } from "@/utils/cookies";
 
 type User = {
   id: string;
@@ -19,17 +25,24 @@ type User = {
   mobile_number: string;
   email_address: string;
 };
+var totalUsers = 0;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await apiRequest("/getAllUsers", "GET");
-      setUsers(response.data || []);
-      toast.success("Users loaded successfully!");
+      const response = await apiRequest("allUsers", "GET");
+      if (response.success) {
+        totalUsers = response.totalUser;
+        setUsers(response.data || []);
+        toast.success("Users loaded successfully!");
+      } else {
+        toast.warning("Users not loaded properly!");
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to fetch users."
@@ -44,46 +57,25 @@ export default function UsersPage() {
   }, []);
 
   return (
-    <div className="p-6 w-full">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Users</h2>
-          <p className="text-sm text-muted-foreground">Manage users edit, update, delete and more</p>
+    <PageContainer scrollable>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <Heading
+            title={`Employee (${totalUsers})`}
+            description="Manage employees (Server side table functionalities.)"
+          />
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add New
+          </Button>
         </div>
-        <Button
-          onClick={() => toast.info("Add User functionality coming soon!")}
-        >
-          Add User
-        </Button>
+        <Separator />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Add Table Here */}
+          </div>
+        </div>
+        {/* <EmployeeTable data={employee} totalData={totalUsers} /> */}
       </div>
-      <div className="dark:bg-gray-800 rounded shadow">
-        {loading ? (
-          <p className="p-4 text-center">Loading...</p>
-        ) : users.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Shop Name</TableHead>
-                <TableHead>Mobile Number</TableHead>
-                <TableHead>Email</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>{user.shop_name}</TableCell>
-                  <TableCell>{user.mobile_number}</TableCell>
-                  <TableCell>{user.email_address}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="p-4 text-center">No users found.</p>
-        )}
-      </div>
-    </div>
+    </PageContainer>
   );
 }
