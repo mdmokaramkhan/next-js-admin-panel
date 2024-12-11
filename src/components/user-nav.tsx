@@ -11,9 +11,12 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { signOut, useSession } from 'next-auth/react';
+import { removeAuthToken } from '@/utils/cookies';
+import { useRouter } from 'next/navigation';
+// import { signOut, useSession } from 'next-auth/react';
 export function UserNav() {
-  const { data: session } = useSession();
+  const router = useRouter();
+  const session = 1;
   if (session) {
     return (
       <DropdownMenu>
@@ -24,7 +27,7 @@ export function UserNav() {
                 src={session.user?.image ?? ''}
                 alt={session.user?.name ?? ''}
               />
-              <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>
+              <AvatarFallback>M</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -56,7 +59,7 @@ export function UserNav() {
             <DropdownMenuItem>New Team</DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => signOut()}>
+          <DropdownMenuItem onClick={() => removeAuthToken(router)}>
             Log out
             <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
           </DropdownMenuItem>

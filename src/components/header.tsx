@@ -3,6 +3,8 @@ import React from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ModeToggle } from '@/components/ThemeToggle';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import SearchInput from '@/components/search-input';
+import { UserNav } from '@/components/user-nav';
 
 export default function Header() {
   return (
@@ -15,9 +17,9 @@ export default function Header() {
 
       <div className="flex items-center gap-2 px-4">
         <div className="hidden md:flex">
-          {/* <SearchInput /> */}
+          <SearchInput />
         </div>
-        {/* <UserNav /> */}
+        <UserNav />
         <ModeToggle />
       </div>
     </header>

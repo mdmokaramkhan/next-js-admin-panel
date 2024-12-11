@@ -1,12 +1,12 @@
 import { getAuthToken, removeAuthToken } from "@/utils/cookies";
-import { redirect } from "next/navigation";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function apiRequest(
   endpoint: string,
   method: "GET" | "POST" | "PUT" | "DELETE",
-  body?: any
+  body?: any,
+  router?: any
 ) {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -34,7 +34,7 @@ export async function apiRequest(
 
     return await response.json();
   } catch (error) {
-    removeAuthToken();
+    removeAuthToken(router);
     throw new Error((error as Error).message);
   }
 }

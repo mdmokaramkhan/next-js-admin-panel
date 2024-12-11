@@ -1,4 +1,5 @@
 import  Cookies  from "js-cookie";
+import { toast } from "sonner";
 
 export const setAuthToken = (token: string) => {
   console.log("Setting token:", token);
@@ -17,8 +18,9 @@ export const getAuthToken = () => {
   return token;
 };
 
-export const removeAuthToken = () => {
+export const removeAuthToken = (router: any) => {
   console.log("Removing token");
   Cookies.remove("accessToken", { path: "/" });
-  window.location.href = "/auth/login";
+  router.push("/auth/login");
+  toast.success("Logged out successfully.");
 };
