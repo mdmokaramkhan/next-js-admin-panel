@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 
 type User = {
@@ -24,7 +31,9 @@ export default function UsersPage() {
       setUsers(response.data || []);
       toast.success("Users loaded successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to fetch users.");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to fetch users."
+      );
     } finally {
       setLoading(false);
     }
@@ -37,8 +46,15 @@ export default function UsersPage() {
   return (
     <div className="p-6 w-full">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">User Management</h1>
-        <Button onClick={() => toast.info("Add User functionality coming soon!")}>Add User</Button>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Users</h2>
+          <p className="text-sm text-muted-foreground">Manage users edit, update, delete and more</p>
+        </div>
+        <Button
+          onClick={() => toast.info("Add User functionality coming soon!")}
+        >
+          Add User
+        </Button>
       </div>
       <div className="dark:bg-gray-800 rounded shadow">
         {loading ? (

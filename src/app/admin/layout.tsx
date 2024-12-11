@@ -1,15 +1,18 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import  Navbar  from "@/components/navbar";
+import { cookies } from 'next/headers';
+import Header from "@/components/header";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  // const cookieStore = cookies();
+  // const defaultOpen = cookieStore.get('sidebar:state')?.value === 'true';
   return (
     <SidebarProvider>
       <AppSidebar />
-      <main>
-        <Navbar />
+      <SidebarInset>
+        <Header />
         {children}
-      </main>
+      </SidebarInset>
     </SidebarProvider>
   )
 }
