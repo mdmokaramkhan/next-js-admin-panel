@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ export default function Page() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +35,10 @@ export default function Page() {
         username,
         password,
       });
-      alert("Login successful! Token: " + data.token);
+      toast.success(data.message, {
+        position: "top-right",
+      });
+      router.push(`/auth/otp-verification?tempToken=${username}`);
     } catch (err: any) {
       toast.error(err.message, {
         position: "top-right",

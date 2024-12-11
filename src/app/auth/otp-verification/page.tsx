@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import React, { Suspense } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,35 +19,49 @@ import {
 } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { apiRequest } from "@/lib/api";
+import { Lock, Loader2 } from "lucide-react";
+import { setAuthToken } from "@/utils/cookies";
 
-export default function OTPVerification() {
+const  OTPVerification = () => {
   const [otp, setOtp] = useState("");
+  const searchParams = useSearchParams();
+  const tempToken = searchParams?.get("tempToken");
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tempToken) {
+      toast("Invalid session. Please log in again.", {
+        className: "bg-red-500",
+      });
+      router.push("/auth/login");
+    }
+  }, [tempToken, router]);
 
   const handleVerify = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ otp }),
+      const data = await apiRequest("/verifyOTP", "POST", {
+        username: tempToken,
+        userOTP: otp,
       });
-
-      if (!res.ok) {
-        toast.error("Invalid Otp", {
-          position: "top-right",
-        });
-        toast.success("OTP Verified!", {
-          position: "top-right",
-        });
+      if (data.token) {
+        // Store the access token in cookies
+        setAuthToken(data.token);
+  
+        // Navigate to the dashboard or protected page
+        toast.success("Login successful!", { position: "top-right" });
+        router.push("/dashboard");
       } else {
-        toast.success("OTP Verified!", {
-          position: "top-right",
-        });
+        throw new Error("Access token not provided");
       }
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message, {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,16 +93,39 @@ export default function OTPVerification() {
                 </InputOTPGroup>
               </InputOTP>
             </div>
-            <Button onClick={handleVerify} className="w-full">
-              <Lock className="w-6 h-6 text-white-500 stroke-2" />
-              Verify OTP
+            <Button
+              onClick={handleVerify}
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                <>
+                  <Lock /> Verify OTP
+                </>
+              )}
             </Button>
             <div className="m-auto mt-3 text-xs text-center">
-              <Link href="#">Resend OTP</Link>
+              <span>Didn&apos;t received code? </span>
+              <Link href="#" className="underline">
+                Resend OTP
+              </Link>
             </div>
           </CardContent>
         </CardHeader>
       </Card>
     </div>
+  );
+}
+
+export default function PageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OTPVerification />
+    </Suspense>
   );
 }
