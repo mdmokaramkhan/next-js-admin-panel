@@ -64,14 +64,6 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="animate-spin" size={50} color="#4B5563" />
-      </div>
-    );
-  }
-
   return (
     <PageContainer scrollable>
       <div className="space-y-4">
@@ -85,8 +77,6 @@ export default function UsersPage() {
           </Button>
         </div>
         <Separator />
-        {/* <DataTable columns={columns} data={users} totalItems={totalUsers} />
-         */}
         <DataTable
           columns={columns}
           data={users}
