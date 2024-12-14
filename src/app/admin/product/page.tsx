@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { DataTable } from "./data-table";
-import { DataTableSkeleton } from "@/components/ui/table1/data-table-skeleton";
 
 import type { Product } from "./columns";
 import { columns } from "./columns";
