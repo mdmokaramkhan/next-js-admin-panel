@@ -81,7 +81,7 @@ export function DataTableFilterBox({
                 {selectedValuesSet.size}
               </Badge>
               <div className="hidden space-x-1 lg:flex">
-                {selectedValuesSet.size > 2 ? (
+                {selectedValuesSet.size >= 2 ? (
                   <Badge
                     variant="secondary"
                     className="rounded-sm px-1 font-normal"
@@ -107,7 +107,7 @@ export function DataTableFilterBox({
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
-          <CommandInput placeholder={title} />
+          <CommandInput placeholder={`Search ${title}`} />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>

@@ -2,7 +2,7 @@
 import { Button } from '../button';
 
 type DataTableResetFilterProps = {
-  isFilterActive: boolean;
+  isFilterActive: string;
   onReset: () => void;
 };
 
