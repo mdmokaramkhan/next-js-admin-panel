@@ -1,7 +1,13 @@
+"use client";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import { CellAction } from "./cell-action";
 import { ColumnDef } from "@tanstack/react-table";
+import { Switch } from "@/components/ui/switch";
+import { apiRequest } from "@/lib/api";
+import { toast } from "sonner";
+import { useState } from "react";
 
 export type GroupDetails = {
   id: string;
@@ -101,6 +107,57 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+    header: "Status",
+    accessorKey: "status",
+    cell: ({
+      row,
+    }: {
+      row: { getValue: (key: string) => boolean; original: User };
+    }) => {
+      const initialStatus = row.getValue("status");
+
+      // Use state to handle the toggle locally
+      const [status, setStatus] = useState<boolean>(initialStatus);
+
+      // Function to update the user status (with error handling)
+      const handleStatusChange = async (newStatus: boolean) => {
+        const id = row.original.id; // Assuming the user has an id
+        setStatus(newStatus); // Optimistic UI update (changes immediately on toggle)
+
+        try {
+          const response = await apiRequest(
+            "updateUser", // Replace with your actual API endpoint
+            "POST",
+            { id, status: newStatus }
+          );
+          if (response.success) {
+            toast.success("User status updated successfully!");
+          } else {
+            toast.error("Failed to update status.");
+            setStatus(initialStatus); // Revert to the previous status on failure
+          }
+        } catch (error) {
+          toast.error("Error updating status.");
+          setStatus(initialStatus); // Revert to the previous status on error
+        }
+      };
+
+      return (
+        <Switch
+          checked={status}
+          onCheckedChange={(value) => handleStatusChange(!!value)} // Toggle and handle status change
+          id="airplane-mode"
+          className="relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 ease-in-out
+            bg-gray-300 dark:bg-gray-700
+            data-[state=checked]:bg-green-600
+            data-[state=unchecked]:bg-gray-300
+            dark:data-[state=checked]:bg-green-700
+            dark:data-[state=unchecked]:bg-gray-600"
+        />
+      );
+    },
+  },
+  {
     header: "Role",
     cell: ({
       row,
@@ -156,14 +213,6 @@ export const columns: ColumnDef<User>[] = [
       ) : (
         <AlertCircle className="h-5 w-5 text-yellow-500" />
       );
-    },
-  },
-  {
-    header: "Status",
-    accessorKey: "status",
-    cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => {
-      const status = row.getValue("status");
-      return status ? "Active" : "Inactive";
     },
   },
   {

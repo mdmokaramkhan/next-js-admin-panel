@@ -123,12 +123,12 @@ export default function UsersPage() {
     setIsSubmitting(true);
     try {
       const response = await apiRequest(
-        "transferMoney",
+        "sendBalance",
         "POST",
         formData,
         router
       );
-      if (response.success) {
+      if (response.status) {
         toast.success("Money sent successfully!");
         setIsTransferDialogOpen(false); // Close dialog on success
       } else {
