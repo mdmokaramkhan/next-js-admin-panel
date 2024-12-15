@@ -1,6 +1,17 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+} from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 interface DataTablePaginationProps {
   table: any;
@@ -18,7 +29,8 @@ export function DataTablePagination({
   const paginationState = table.getState().pagination;
   const currentPage = paginationState.pageIndex + 1;
   const pageSize = paginationState.pageSize;
-  const showingFrom = totalItems === 0 ? 0 : paginationState.pageIndex * pageSize + 1;
+  const showingFrom =
+    totalItems === 0 ? 0 : paginationState.pageIndex * pageSize + 1;
   const showingTo = Math.min(
     (paginationState.pageIndex + 1) * pageSize,
     filteredDataCount
@@ -30,16 +42,23 @@ export function DataTablePagination({
       <div className="flex w-full items-center justify-between">
         <div className="flex-1 text-sm text-muted-foreground">
           {filteredDataCount > 0 ? (
-            <>Showing {showingFrom} to {showingTo} of {totalItems} entries</>
+            <>
+              Showing {showingFrom} to {showingTo} of {totalItems} entries
+            </>
           ) : (
             "No entries found"
           )}
         </div>
+      </div>
 
+      {/* Pagination buttons */}
+      <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
         {/* Rows per page select */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8">
           <div className="flex items-center space-x-2">
-            <p className="whitespace-nowrap text-sm font-medium">Rows per page</p>
+            <p className="whitespace-nowrap text-sm font-medium">
+              Rows per page
+            </p>
             <Select
               value={`${paginationState.pageSize}`}
               onValueChange={(value) => table.setPageSize(Number(value))}
@@ -57,13 +76,11 @@ export function DataTablePagination({
             </Select>
           </div>
         </div>
-      </div>
-
-      {/* Pagination buttons */}
-      <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
         <div className="flex w-[150px] items-center justify-center text-sm font-medium">
           {totalItems > 0 ? (
-            <>Page {currentPage} of {table.getPageCount()}</>
+            <>
+              Page {currentPage} of {table.getPageCount()}
+            </>
           ) : (
             "No pages"
           )}

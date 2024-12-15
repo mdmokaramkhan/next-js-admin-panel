@@ -54,19 +54,19 @@ export const columns: ColumnDef<Product>[] = [
     enableHiding: false,
   },
   {
-    header: "Provider Code",
-    accessorKey: "provider_code", // Corresponds to the `provider_code` field in the model
-    cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
-      const providerCode = row.getValue("provider_code");
-      return providerCode;
-    },
-  },
-  {
     header: "Provider Name",
     accessorKey: "provider_name", // Corresponds to the `provider_name` field
     cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
       const providerName = row.getValue("provider_name");
       return providerName;
+    },
+  },
+  {
+    header: "Provider Code",
+    accessorKey: "provider_code", // Corresponds to the `provider_code` field in the model
+    cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
+      const providerCode = row.getValue("provider_code");
+      return providerCode;
     },
   },
   {

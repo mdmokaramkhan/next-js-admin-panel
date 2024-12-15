@@ -68,14 +68,14 @@ export const columns: ColumnDef<User>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  // {
-  //   header: "Display Name",
-  //   accessorKey: "shop_name",
-  //   cell: ({ row }: { row: { getValue: (key: string) => string | null } }) => {
-  //     const shopName = row.getValue("shop_name");
-  //     return shopName ?? "Not Set";
-  //   },
-  // },
+  {
+    header: "Display Name",
+    accessorKey: "shop_name",
+    cell: ({ row }: { row: { getValue: (key: string) => string | null } }) => {
+      const shopName = row.getValue("shop_name");
+      return shopName ?? "N/A";
+    },
+  },
   {
     header: "Person Name",
     accessorKey: "owner_name",
@@ -85,19 +85,19 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    header: "Phone Number",
-    accessorKey: "mobile_number",
-    cell: ({ row }: { row: { getValue: (key: string) => number } }) => {
-      const mobileNumber = row.getValue("mobile_number");
-      return "+91" + mobileNumber;
-    },
-  },
-  {
     header: "Email",
     accessorKey: "email_address",
     cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
       const emailAddress = row.getValue("email_address");
       return emailAddress;
+    },
+  },
+  {
+    header: "Phone Number",
+    accessorKey: "mobile_number",
+    cell: ({ row }: { row: { getValue: (key: string) => number } }) => {
+      const mobileNumber = row.getValue("mobile_number");
+      return "+91" + mobileNumber;
     },
   },
   {
@@ -112,10 +112,27 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    header: "Balance",
+    header: "Recharge",
     accessorKey: "rch_bal",
     cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
       const balance = row.getValue("rch_bal");
+      if (balance === null || balance === undefined) {
+        return "Not Set";
+      }
+      const formattedBalance = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+      }).format(balance);
+
+      return formattedBalance;
+    },
+  },
+  {
+    header: "Utility",
+    accessorKey: "utility_bal",
+    cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
+      const balance = row.getValue("utility_bal");
       if (balance === null || balance === undefined) {
         return "Not Set";
       }
