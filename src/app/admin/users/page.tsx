@@ -1,23 +1,40 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, UserPlus } from "lucide-react";
+import { Send, UserPlus } from "lucide-react";
 import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "./data-table";
 import { User, columns } from "./columns";
-import { AddUserModal } from "@/app/admin/users/add-user-modal";
+import AddUserDialog from "./add-user-modal"; // Import the Add User dialog component
+import TransferMoneyDialog from "./send-money-modal"; // Import the new Transfer Money dialog component
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Modal visibility state
+  const [formData, setFormData] = useState({
+    owner_name: "",
+    email_address: "",
+    mobile_number: "",
+    password: "",
+    shop_name: "",
+    address: "",
+    group_code: "",
+    callback_url: "",
+  });
+  const [transferData, setTransferData] = useState({
+    amount: "",
+    receiptMobileNumber: "",
+    targetWallet: "rch_bal",
+  });
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false); // Add state for Send Money dialog
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const router = useRouter();
 
   const fetchUsers = async () => {
@@ -25,9 +42,7 @@ export default function UsersPage() {
     try {
       const response = await apiRequest("allUsers", "GET", null, router);
       if (response.success) {
-        setTotalUsers(response.totalUser);
         setUsers(response.data || []);
-        toast.success("Users loaded successfully!");
       } else {
         toast.warning("Users not loaded properly!");
       }
@@ -40,16 +55,47 @@ export default function UsersPage() {
     }
   };
 
-  const handleAddUser = async (user: {
-    name: string;
-    email: string;
-    role: string;
-  }) => {
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const {
+      owner_name,
+      email_address,
+      mobile_number,
+      password,
+      shop_name,
+      address,
+      group_code,
+    } = formData;
+    if (
+      !owner_name ||
+      !email_address ||
+      !mobile_number ||
+      !password ||
+      !shop_name ||
+      !address ||
+      !group_code
+    ) {
+      toast.error("All fields except Callback URL are required.");
+      return;
+    }
+    if (!/^[0-9]+$/.test(mobile_number)) {
+      toast.error("Mobile number must be a valid integer.");
+      return;
+    }
+    const parsedMobileNumber = parseInt(mobile_number, 10);
+
+    setIsSubmitting(true);
     try {
-      const response = await apiRequest("addUser", "POST", user, router); // Replace with your API endpoint
+      const response = await apiRequest(
+        "createUser",
+        "POST",
+        { ...formData, mobile_number: parsedMobileNumber },
+        router
+      );
       if (response.success) {
         toast.success("User added successfully!");
-        setUsers([...users, response.data]); // Add new user to the list
+        setUsers((prev) => [...prev, response.data]); // Add new user to the table
+        setIsDialogOpen(false); // Close dialog on success
       } else {
         toast.warning("Failed to add user.");
       }
@@ -57,7 +103,66 @@ export default function UsersPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to add user."
       );
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleTransferMoney = async (formData: {
+    amount: number;
+    receiptMobileNumber: string;
+    targetWallet: string;
+  }) => {
+    const { amount, receiptMobileNumber, targetWallet } = formData;
+
+    if (!amount || !receiptMobileNumber || !targetWallet) {
+      toast.error("All fields are required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await apiRequest(
+        "transferMoney",
+        "POST",
+        formData,
+        router
+      );
+      if (response.success) {
+        toast.success("Money sent successfully!");
+        setIsTransferDialogOpen(false); // Close dialog on success
+      } else {
+        toast.warning("Failed to send money.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send money."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleTransferChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { id, value } = e.target;
+    setTransferData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, group_code: value }));
+  };
+
+  const handleTransferSelectChange = (value: string, field: string) => {
+    setTransferData((prev) => ({ ...prev, [field]: value }));
   };
 
   useEffect(() => {
@@ -72,9 +177,37 @@ export default function UsersPage() {
             title="Users"
             description="Manage your users and their roles here."
           />
-          <Button className="space-x-1" onClick={() => setIsModalOpen(true)}>
-            <UserPlus /> Add User
-          </Button>
+          <div>
+            <Button
+              variant="outline"
+              className="space-x-1 mr-2"
+              onClick={() => setIsTransferDialogOpen(true)}
+            >
+              <Send /> Send Money
+            </Button>
+            <Button className="space-x-1" onClick={() => setIsDialogOpen(true)}>
+              <UserPlus /> Add User
+            </Button>
+            <AddUserDialog
+              onSubmit={handleAddUser}
+              isSubmitting={isSubmitting}
+              isDialogOpen={isDialogOpen}
+              setIsDialogOpen={setIsDialogOpen}
+              formData={formData}
+              handleChange={handleChange}
+              handleSelectChange={handleSelectChange}
+            />
+            <TransferMoneyDialog
+              onSubmit={handleTransferMoney}
+              isSubmitting={isSubmitting}
+              isDialogOpen={isTransferDialogOpen}
+              setIsDialogOpen={setIsTransferDialogOpen}
+              users={users}
+              formData={transferData}
+              handleChange={handleTransferChange}
+              handleSelectChange={handleTransferSelectChange}
+            />
+          </div>
         </div>
         <Separator />
         <DataTable
@@ -84,13 +217,6 @@ export default function UsersPage() {
           loading={loading}
         />
       </div>
-
-      {/* Add User Modal */}
-      <AddUserModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleAddUser}
-      />
     </PageContainer>
   );
 }

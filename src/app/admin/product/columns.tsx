@@ -2,6 +2,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 export type Product = {
   id?: number; // Optional, typically Sequelize auto-generates this
@@ -82,7 +83,8 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: "status", // Corresponds to the `status` field
     cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => {
       const status = row.getValue("status");
-      return status ? "Active" : "Inactive"; // Display friendly text
+      return <Switch checked={status} id="airplane-mode" />
+      // return status ? "Active" : "Inactive"; // Display friendly text
     },
   },
   {

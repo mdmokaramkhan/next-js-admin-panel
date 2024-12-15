@@ -20,8 +20,10 @@ import {
   LucideShoppingBag,
   Moon,
   MoreVertical,
+  MessageCircleCode,
   Pizza,
   Plus,
+  Route,
   Settings,
   SunMedium,
   Trash,
@@ -64,6 +66,8 @@ export const Icons = {
   sun: SunMedium,
   moon: Moon,
   laptop: Laptop,
+  route: Route,
+  messageCircleCode: MessageCircleCode,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

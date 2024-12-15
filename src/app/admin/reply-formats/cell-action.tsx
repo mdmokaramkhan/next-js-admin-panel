@@ -8,13 +8,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Product } from './columns';
+import { MessageTemplate } from './columns';
 import { Edit, MoreHorizontal, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface CellActionProps {
-  data: Product;
+  data: MessageTemplate;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {

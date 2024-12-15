@@ -41,11 +41,11 @@ export type User = {
 
 // Filter Options
 export const roleOptions = [
-  { value: "Admin", label: "Admin" },
-  { value: "Agent", label: "Agent" },
-  { value: "Users", label: "Users" },
+  { value: "O", label: "Admin" },
+  { value: "A", label: "Agent" },
+  { value: "D", label: "Distributor" },
+  { value: "U", label: "Users" },
 ];
-
 
 // Columns
 export const columns: ColumnDef<User>[] = [
