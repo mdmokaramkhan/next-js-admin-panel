@@ -203,6 +203,23 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
+    header: "DMT",
+    accessorKey: "dmt_bal",
+    cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
+      const balance = row.getValue("dmt_bal");
+      if (balance === null || balance === undefined) {
+        return "Not Set";
+      }
+      const formattedBalance = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+      }).format(balance);
+
+      return formattedBalance;
+    },
+  },
+  {
     header: "KYC",
     accessorKey: "isVerified",
     cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => {

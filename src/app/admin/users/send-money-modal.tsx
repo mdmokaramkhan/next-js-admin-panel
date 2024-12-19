@@ -105,7 +105,7 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
                       key={user.mobile_number}
                       value={user.mobile_number.toString()}
                     >
-                      {user.mobile_number}
+                      {user.owner_name} - {user.mobile_number}
                     </SelectItem>
                   ))}
                 </SelectContent>
