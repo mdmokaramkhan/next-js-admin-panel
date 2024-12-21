@@ -12,6 +12,7 @@ import { RecentTransfers } from "./_components/recent-transfers";
 import AddMoneyModal from "./_components/add-money";
 import PageContainer from "@/components/page-container";
 import Transactions from "../analytics/live-transactions";
+import { RecentAddMoney } from "./_components/recent-add-money";
 
 export default function Overview() {
   return (
@@ -143,13 +144,24 @@ export default function Overview() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
               <Card className="col-span-4 md:col-span-3">
                 <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
+                  <CardTitle>Recent Transfers</CardTitle>
                   <CardDescription>
-                    You made 265 sales this month.
+                    You made total sales this month.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <RecentTransfers />
+                </CardContent>
+              </Card>
+              <Card className="col-span-4 md:col-span-3">
+                <CardHeader>
+                  <CardTitle>Recent Add Money</CardTitle>
+                  <CardDescription>
+                    You made total sales this month.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RecentAddMoney />
                 </CardContent>
               </Card>
             </div>

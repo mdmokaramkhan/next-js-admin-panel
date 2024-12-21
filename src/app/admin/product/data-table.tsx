@@ -8,12 +8,13 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 import { DataTableFilterBox } from "@/components/ui/table/data-table-filter";
-import { Product, providerOptions, walletOptions } from "./columns";
+import { Product } from "./columns";
 import { Input } from "@/components/ui/input";
 import { DataTableResetFilter } from "@/components/ui/table/data-tble-reset";
 import { DataTablePagination } from "@/components/ui/table/data-table-pagination";
 import { DataTableWithScroll } from "@/components/ui/table/data-table";
 import { DataTableSkeleton } from "@/components/ui/table/data-table-skeleton";
+import { providerOptions, walletOptions } from "@/constants/options";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

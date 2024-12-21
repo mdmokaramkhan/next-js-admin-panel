@@ -6,7 +6,7 @@ const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
-    const socket = io('http://localhost:8080'); // Replace with your backend URL
+    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL); // Replace with your backend URL
 
     socket.on('transaction:create', (newTransaction) => {
       setTransactions((prev) => [...prev, newTransaction]); // Add new transaction

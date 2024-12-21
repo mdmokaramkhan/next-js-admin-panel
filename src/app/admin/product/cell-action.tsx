@@ -1,17 +1,14 @@
-'use client';
-import { AlertModal } from '@/components/modal/alert-modal';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Product } from './columns';
-import { Edit, MoreHorizontal, Trash } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { Product } from "./columns";
+import { Edit, MoreHorizontal, Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertModal } from "@/components/modal/alert-modal";
+import { AddProductSheet } from "./_components/add-product-modal";
+import { toast } from "sonner";
+import { apiRequest } from "@/lib/api";
 
 interface CellActionProps {
   data: Product;
@@ -19,19 +16,58 @@ interface CellActionProps {
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);  // Track product to be edited
   const router = useRouter();
 
-  const onConfirm = async () => {};
+  const handleDeleteProduct = () => {
+    setOpenDeleteModal(true);
+  };
+
+  const handleEditProduct = () => {
+    setEditProduct(data); // Set the product data to be edited
+    setOpenEditModal(true); // Open the edit modal
+  };
+
+  const onDeleteConfirm = async () => {
+    setLoading(true);
+    try {
+      const response = await apiRequest("deleteProvider", "DELETE", { id: data.id }, router);
+      if (response.success) {
+        toast.success("Product deleted successfully!");
+      } else {
+        toast.error(response.message || "Failed to delete product.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete product.");
+    } finally {
+      setLoading(false);
+      setOpenDeleteModal(false);
+    }
+  };
 
   return (
     <>
+      {/* Edit Product Modal */}
+      <AddProductSheet
+        isOpen={openEditModal}
+        onClose={() => setOpenEditModal(false)}
+        onAddProduct={(newProduct) => {
+          // Handle add or update logic here
+          setOpenEditModal(false);
+        }}
+        productToEdit={editProduct} // Pass product data to the edit modal
+      />
+      
+      {/* Delete Confirmation Modal */}
       <AlertModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        onConfirm={onConfirm}
+        isOpen={openDeleteModal}
+        onClose={() => setOpenDeleteModal(false)}
+        onConfirm={onDeleteConfirm}
         loading={loading}
       />
+
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -42,12 +78,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
-          <DropdownMenuItem
-            onClick={() => router.push(`/admin/user/${data.id}`)}
-          >
+          {/* Update product */}
+          <DropdownMenuItem onClick={handleEditProduct}>
             <Edit className="mr-2 h-4 w-4" /> Update
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen(true)}>
+
+          {/* Delete product */}
+          <DropdownMenuItem onClick={handleDeleteProduct}>
             <Trash className="mr-2 h-4 w-4" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

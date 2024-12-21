@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { DataTable } from "./data-table";
+import { AddProductSheet } from "./_components/add-product-modal";
 
 import type { Product } from "./columns";
 import { columns } from "./columns";
@@ -17,6 +18,8 @@ import { columns } from "./columns";
 export default function Product() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null); // Track the product being edited
   const router = useRouter();
 
   const fetchProducts = async () => {
@@ -36,6 +39,17 @@ export default function Product() {
     }
   };
 
+  const handleAddProduct = (newProduct: Product) => {
+    console.log(newProduct);
+    setProducts((prevProducts) =>
+      prevProducts.some((prod) => prod.id === newProduct.id)
+        ? prevProducts.map((prod) =>
+            prod.id === newProduct.id ? newProduct : prod
+          )
+        : [...prevProducts, newProduct]
+    );
+  };
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -48,12 +62,11 @@ export default function Product() {
             title="Product"
             description="Manage your products and their status here."
           />
-          <Button className="space-x-1">
+          <Button className="space-x-1" onClick={() => setIsModalOpen(true)}>
             <PlusCircleIcon /> Add Product
           </Button>
         </div>
         <Separator />
-        {/* Use Skeleton loader during the loading state */}
         <DataTable
           columns={columns}
           data={products}
@@ -61,6 +74,15 @@ export default function Product() {
           loading={loading}
         />
       </div>
+      <AddProductSheet
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setProductToEdit(null); // Reset the product being edited
+        }}
+        onAddProduct={handleAddProduct}
+        productToEdit={productToEdit} // Pass the product to edit
+      />
     </PageContainer>
   );
 }
