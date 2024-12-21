@@ -2,9 +2,21 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api"; // Adjust the path as needed
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+
+interface AddMoney {
+  id: number;
+  mobile_number: number;
+  shop_name: string;
+  amount: number;
+  wallet_type: string;
+  balance: string;
+  description: string;
+  createdAt: string;
+}
 
 export function RecentAddMoney() {
-  const [addMoneyRecords, setAddMoneyRecords] = useState<any[]>([]); // Store the recent "Add Money" records
+  const [addMoneyRecords, setAddMoneyRecords] = useState<AddMoney[]>([]); // Store the recent "Add Money" records
   const [loading, setLoading] = useState<boolean>(true); // Loading state
   const [error, setError] = useState<string | null>(null); // Error state
 
@@ -80,22 +92,33 @@ export function RecentAddMoney() {
       {addMoneyRecords.map((record) => (
         <div key={record.id} className="flex items-center">
           <Avatar className="h-9 w-9">
-            {/* Avatar Image with a fallback */}
-            <AvatarImage src={`/avatars/${record.id}.png`} alt="Avatar" />
             <AvatarFallback>
-              {record.shop_name ? record.shop_name.slice(0, 2) : "NA"}
+              {record.shop_name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="ml-4 space-y-1">
             <p className="text-sm font-medium leading-none">
-              {record.shop_name || "Unnamed Shop"}
+              {record.shop_name}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {record.description + " In " + record.wallet_type || "No description available"}
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                {record.description}
+              </p>
+              <Badge variant="secondary" className="capitalize text-xs">
+                {record.wallet_type.replace('_bal', '').toUpperCase()}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {new Date(record.createdAt).toLocaleString()}
             </p>
           </div>
-          <div className="ml-auto font-medium text-green-500">
-            {formatAmount(record.amount)}
+          <div className="ml-auto text-right">
+            <p className="font-medium text-green-500">
+              +₹{record.amount.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Balance: ₹{parseFloat(record.balance).toLocaleString()}
+            </p>
           </div>
         </div>
       ))}

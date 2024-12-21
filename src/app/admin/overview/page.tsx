@@ -1,3 +1,6 @@
+"use client";
+import { BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { CalendarDateRangePicker } from "@/components/date-range-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +18,43 @@ import Transactions from "../analytics/live-transactions";
 import { RecentAddMoney } from "./_components/recent-add-money";
 
 export default function Overview() {
+  const salesData = [
+    { month: "Jan", online: 1500, offline: 900 },
+    { month: "Feb", online: 2300, offline: 1200 },
+    { month: "Mar", online: 3200, offline: 2100 },
+    { month: "Apr", online: 2800, offline: 1800 },
+    { month: "May", online: 4100, offline: 2600 },
+    { month: "Jun", online: 3800, offline: 2400 },
+  ];
+
+  const salesConfig = {
+    online: {
+      label: "Online Sales",
+      color: "#2563eb",
+    },
+    offline: {
+      label: "Offline Sales",
+      color: "#60a5fa",
+    },
+  } satisfies ChartConfig;
+
+  const transactionConfig = {
+    total: {
+      label: "Transactions",
+      color: "#2563eb",
+    },
+  } satisfies ChartConfig;
+
+  const transactionData = [
+    { name: 'Mon', total: 145 },
+    { name: 'Tue', total: 230 },
+    { name: 'Wed', total: 187 },
+    { name: 'Thu', total: 332 },
+    { name: 'Fri', total: 278 },
+    { name: 'Sat', total: 389 },
+    { name: 'Sun', total: 423 },
+  ];
+
   return (
     <PageContainer scrollable>
       <div className="space-y-2 pb-4 h-full">
@@ -138,6 +178,47 @@ export default function Overview() {
                   <p className="text-xs text-muted-foreground">
                     +201 since last hour
                   </p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Monthly Sales</CardTitle>
+                  <CardDescription>Online vs Offline sales comparison</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[350px] w-full">
+                    <ChartContainer config={salesConfig} className="mt-6">
+                      <BarChart data={salesData}>
+                        <XAxis dataKey="month" />
+                        <Bar dataKey="online" fill="var(--color-online)" radius={4} />
+                        <Bar dataKey="offline" fill="var(--color-offline)" radius={4} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weekly Transactions</CardTitle>
+                  <CardDescription>Transaction trends this week</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[350px] w-full">
+                    <ChartContainer config={transactionConfig} className="mt-6">
+                      <LineChart data={transactionData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <Line 
+                          type="monotone" 
+                          dataKey="total" 
+                          stroke="var(--color-total)" 
+                          strokeWidth={2} 
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>

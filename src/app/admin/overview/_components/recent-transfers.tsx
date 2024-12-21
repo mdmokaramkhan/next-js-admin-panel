@@ -2,9 +2,24 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api"; // Adjust the path as needed
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+
+interface Transfer {
+  id: number;
+  mobile_number: number;
+  shop_name: string;
+  amount: number;
+  end_mobile_number: number;
+  end_shop_name: string;
+  transfer_type: number;
+  target_wallet: string;
+  balance: string;
+  description: string;
+  createdAt: string;
+}
 
 export function RecentTransfers() {
-  const [transfers, setTransfers] = useState<any[]>([]); // Store the recent transfers
+  const [transfers, setTransfers] = useState<Transfer[]>([]); // Store the recent transfers
   const [loading, setLoading] = useState<boolean>(true); // Loading state
   const [error, setError] = useState<string | null>(null); // Error state
 
@@ -57,28 +72,33 @@ export function RecentTransfers() {
       {transfers.map((transfer) => (
         <div key={transfer.id} className="flex items-center">
           <Avatar className="h-9 w-9">
-            {/* Avatar Image with a fallback */}
-            <AvatarImage src={`/avatars/${transfer.id}.png`} alt="Avatar" />
             <AvatarFallback>
-              {transfer.end_shop_name ? transfer.end_shop_name.slice(0, 2) : "NA"}
+              {transfer.end_shop_name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="ml-4 space-y-1">
             <p className="text-sm font-medium leading-none">
-              {transfer.end_shop_name || "Unnamed Shop"}
+              {transfer.end_shop_name}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {transfer.description || "No description available"}
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                To: {transfer.end_mobile_number}
+              </p>
+              <Badge variant="secondary" className="capitalize text-xs">
+                {transfer.target_wallet.replace('_bal', '').toUpperCase()}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {new Date(transfer.createdAt).toLocaleString()}
             </p>
           </div>
-          <div className="ml-auto font-medium">
-            <span
-              className={
-                transfer.amount > 0 ? "text-green-500" : "text-red-500"
-              }
-            >
-              {formatAmount(transfer.amount)}
-            </span>
+          <div className="ml-auto text-right">
+            <p className="font-medium text-red-500">
+              -₹{transfer.amount.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Balance: ₹{parseFloat(transfer.balance).toLocaleString()}
+            </p>
           </div>
         </div>
       ))}
