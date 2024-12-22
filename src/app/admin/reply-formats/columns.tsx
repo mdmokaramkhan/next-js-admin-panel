@@ -1,5 +1,5 @@
 import * as React from "react";
-const beautify = require('js-beautify').html;
+const beautify = require("js-beautify").html;
 import {
   Dialog,
   DialogContent,
@@ -71,7 +71,15 @@ export const messageTemplateColumns: ColumnDef<MessageTemplate, unknown>[] = [
     accessorKey: "active",
     header: "Active",
     cell: ({ row }) => (
-      <span>{row.original.active ? "Active" : "Inactive"}</span>
+      <div
+        className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+          row.original.active
+            ? "border-transparent bg-emerald-50 text-emerald-600"
+            : "border-transparent bg-rose-50 text-rose-600"
+        }`}
+      >
+        {row.original.active ? "Active" : "Inactive"}
+      </div>
     ),
   },
   {

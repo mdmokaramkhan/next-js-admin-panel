@@ -26,8 +26,8 @@ export const navItems: NavItem[] = [
     items: [], // No child items
   },
   {
-    title: "Routes",
-    url: "/admin/routes/",
+    title: "Groups",
+    url: "/admin/groups/",
     icon: "route",
     shortcut: ["p", "p"],
     isActive: false,

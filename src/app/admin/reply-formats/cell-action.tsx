@@ -12,17 +12,39 @@ import { MessageTemplate } from './columns';
 import { Edit, MoreHorizontal, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { TemplateFormModal } from './template-form-modal';
+import { apiRequest } from "@/lib/api";
+import { toast } from "sonner";
 
 interface CellActionProps {
   data: MessageTemplate;
+  onRefresh?: () => void;
 }
 
-export const CellAction: React.FC<CellActionProps> = ({ data }) => {
+export const CellAction: React.FC<CellActionProps> = ({ data, onRefresh }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const router = useRouter();
 
-  const onConfirm = async () => {};
+  const onConfirm = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest(`messageTemplate/${data.id}`, 'DELETE');
+      
+      if (response.success) {
+        toast.success('Template deleted successfully');
+        onRefresh?.();
+      } else {
+        toast.error(response.message || 'Error deleting template');
+      }
+    } catch (error) {
+      toast.error('Error deleting template');
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  };
 
   return (
     <>
@@ -31,6 +53,12 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onClose={() => setOpen(false)}
         onConfirm={onConfirm}
         loading={loading}
+      />
+      <TemplateFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        template={data}
+        onSuccess={onRefresh || (() => {})}
       />
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
@@ -41,10 +69,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
-          <DropdownMenuItem
-            onClick={() => router.push(`/admin/user/${data.id}`)}
-          >
+          <DropdownMenuItem onClick={() => setIsEditModalOpen(true)}>
             <Edit className="mr-2 h-4 w-4" /> Update
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>

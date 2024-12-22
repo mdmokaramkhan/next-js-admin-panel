@@ -1,4 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Pencil } from "lucide-react"
 
 // Type definitions based on your database schema
 export interface Group {
@@ -30,22 +33,27 @@ export interface CashbackSetting {
   provider_details: ProviderDetails;
 }
 
+// Add this type export
+export type CashbackColumn = ColumnDef<CashbackSetting>[];
+
 // Column definitions for the cashback settings table
-export const cashbackColumns: ColumnDef<CashbackSetting>[] = [
+export const createCashbackColumns = (onEdit: (cashback: CashbackSetting) => void): CashbackColumn => [
   {
-    id: "provider_code",
+    id: "provider",
     accessorKey: "provider_details.provider_name", // Changed to show provider name instead of code
     header: "Provider Name",
     cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-md border bg-muted p-1">
-          <img 
-            src={`/images/${row.original.provider_details.provider_logo}`} 
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage
+            src={`/images/${row.original.provider_details.provider_logo}`}
             alt={row.original.provider_details.provider_name}
-            className="w-full h-full object-contain"
           />
-        </div>
-        <span>{row.original.provider_details.provider_name}</span>
+          <AvatarFallback>
+            {row.original.provider_details.provider_name.substring(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-medium">{row.original.provider_details.provider_name}</span>
       </div>
     )
   },
@@ -83,4 +91,16 @@ export const cashbackColumns: ColumnDef<CashbackSetting>[] = [
       </div>
     )
   },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onEdit(row.original)}
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+    )
+  }
 ]

@@ -11,10 +11,12 @@ import { MessageTemplate, messageTemplateColumns } from "./columns";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { DataTable } from "./data-table";
+import { TemplateFormModal } from "./template-form-modal";
 
 export default function ReplyFormats() {
   const [replyFormats, setReplyFormats] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   const fetchReplyFormats = async () => {
@@ -50,8 +52,8 @@ export default function ReplyFormats() {
             title="Notification Formats"
             description="Manage your reply formats and their status here."
           />
-          <Button className="space-x-1">
-            <PlusCircleIcon /> Manage Formats
+          <Button className="space-x-1" onClick={() => setIsModalOpen(true)}>
+            <PlusCircleIcon /> Add New Format
           </Button>
         </div>
         <Separator />
@@ -62,6 +64,11 @@ export default function ReplyFormats() {
           loading={loading}
         />
       </div>
+      <TemplateFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchReplyFormats}
+      />
     </PageContainer>
   );
 }
