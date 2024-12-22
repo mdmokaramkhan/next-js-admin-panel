@@ -28,8 +28,8 @@ A modern web application built with Shadcn UI components, offering a beautiful a
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/shadcn.git
-cd shadcn
+git clone https://github.com/mdmokaramkhan/next-js-admin-panel.git
+cd next-js-admin-panel
 ```
 
 2. Install dependencies
