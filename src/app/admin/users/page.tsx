@@ -169,6 +169,22 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    const handleTransferDialog = (event: CustomEvent) => {
+      const { userId, mobileNumber } = event.detail;
+      setTransferData(prev => ({
+        ...prev,
+        receiptMobileNumber: mobileNumber.toString()
+      }));
+      setIsTransferDialogOpen(true);
+    };
+
+    window.addEventListener('openTransferDialog', handleTransferDialog as EventListener);
+    return () => {
+      window.removeEventListener('openTransferDialog', handleTransferDialog as EventListener);
+    };
+  }, []);
+
   return (
     <PageContainer scrollable>
       <div className="space-y-4">

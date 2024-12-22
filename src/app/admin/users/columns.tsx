@@ -1,13 +1,21 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, Wallet, Send } from "lucide-react";
 import { CellAction } from "./cell-action";
 import { ColumnDef } from "@tanstack/react-table";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { useState } from "react";
+import BalanceDialog from "./balance-dialog";
 
 export type GroupDetails = {
   id: string;
@@ -169,54 +177,75 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    header: "Recharge",
-    accessorKey: "rch_bal",
-    cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
-      const balance = row.getValue("rch_bal");
-      if (balance === null || balance === undefined) {
-        return "Not Set";
-      }
-      const formattedBalance = new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: 0,
-      }).format(balance);
+    header: "Balance",
+    cell: ({ row }) => {
+      const [isDialogOpen, setIsDialogOpen] = useState(false);
+      const balances = {
+        userInfo: {
+          name: row.original.owner_name,
+          shopName: row.original.shop_name ?? null, // Convert undefined to null
+          mobile: row.original.mobile_number,
+          role: row.original.groupDetails?.group_name || 'N/A'
+        },
+        rch_bal: row.original.rch_bal,
+        rch_min_bal: row.original.rch_min_bal,
+        utility_bal: row.original.utility_bal,
+        utility_min_bal: row.original.utility_min_bal,
+        dmt_bal: row.original.dmt_bal,
+        dmt_min_bal: row.original.dmt_min_bal,
+      };
 
-      return formattedBalance;
-    },
-  },
-  {
-    header: "Utility",
-    accessorKey: "utility_bal",
-    cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
-      const balance = row.getValue("utility_bal");
-      if (balance === null || balance === undefined) {
-        return "Not Set";
-      }
-      const formattedBalance = new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: 0,
-      }).format(balance);
+      const totalBalance = row.original.rch_bal + row.original.utility_bal + row.original.dmt_bal;
 
-      return formattedBalance;
-    },
-  },
-  {
-    header: "DMT",
-    accessorKey: "dmt_bal",
-    cell: ({ row }: { row: { getValue: (key: string) => number | null } }) => {
-      const balance = row.getValue("dmt_bal");
-      if (balance === null || balance === undefined) {
-        return "Not Set";
-      }
-      const formattedBalance = new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: 0,
-      }).format(balance);
-
-      return formattedBalance;
+      return (
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setIsDialogOpen(true)}
+                >
+                  <Wallet className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="p-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Recharge:</span>
+                    <span>₹{row.original.rch_bal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Utility:</span>
+                    <span>₹{row.original.utility_bal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">DMT:</span>
+                    <span>₹{row.original.dmt_bal.toLocaleString()}</span>
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('openTransferDialog', { 
+                detail: { userId: row.original.id, mobileNumber: row.original.mobile_number }
+              }));
+            }}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+          <BalanceDialog 
+            isOpen={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+            balances={balances}
+          />
+        </div>
+      );
     },
   },
   {

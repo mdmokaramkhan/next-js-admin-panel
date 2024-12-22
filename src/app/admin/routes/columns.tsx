@@ -38,11 +38,13 @@ export const cashbackColumns: ColumnDef<CashbackSetting>[] = [
     header: "Provider Name",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <img 
-          src={`/images/${row.original.provider_details.provider_logo}`} 
-          alt={row.original.provider_details.provider_name}
-          className="w-6 h-6 object-contain"
-        />
+        <div className="w-8 h-8 rounded-md border bg-muted p-1">
+          <img 
+            src={`/images/${row.original.provider_details.provider_logo}`} 
+            alt={row.original.provider_details.provider_name}
+            className="w-full h-full object-contain"
+          />
+        </div>
         <span>{row.original.provider_details.provider_name}</span>
       </div>
     )
@@ -72,7 +74,11 @@ export const cashbackColumns: ColumnDef<CashbackSetting>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <div className={`font-medium ${row.getValue("status") ? "text-green-600" : "text-red-600"}`}>
+      <div className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+        row.getValue("status") 
+          ? "border-transparent bg-emerald-50 text-emerald-600" 
+          : "border-transparent bg-rose-50 text-rose-600"
+      }`}>
         {row.getValue("status") ? "Active" : "Inactive"}
       </div>
     )

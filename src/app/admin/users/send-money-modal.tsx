@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Send, Search, Check, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,22 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
   handleChange,
   handleSelectChange,
 }) => {
+  // Add useEffect to handle the custom event
+  useEffect(() => {
+    const handleTransferDialogOpen = (event: CustomEvent) => {
+      const { targetWallet } = event.detail;
+      if (targetWallet) {
+        handleSelectChange(targetWallet, "targetWallet");
+      }
+    };
+
+    window.addEventListener('openTransferDialog', handleTransferDialogOpen as EventListener);
+    
+    return () => {
+      window.removeEventListener('openTransferDialog', handleTransferDialogOpen as EventListener);
+    };
+  }, [handleSelectChange]);
+
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
