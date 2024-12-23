@@ -28,8 +28,15 @@ export const navItems: NavItem[] = [
   {
     title: "Groups",
     url: "/admin/groups/",
-    icon: "route",
+    icon: "users",
     shortcut: ["p", "p"],
+    isActive: false,
+    items: [], // No child items
+  },{
+    title: "Routes",
+    url: "/admin/modules/",
+    icon: "route",
+    shortcut: ["r", "r"],
     isActive: false,
     items: [], // No child items
   },

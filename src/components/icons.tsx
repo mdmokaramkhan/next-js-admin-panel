@@ -29,6 +29,7 @@ import {
   Trash,
   Twitter,
   User,
+  Users,
   UserCircle2Icon,
   UserPen,
   UserX2Icon,
@@ -68,6 +69,7 @@ export const Icons = {
   laptop: Laptop,
   route: Route,
   messageCircleCode: MessageCircleCode,
+  users: Users,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"
