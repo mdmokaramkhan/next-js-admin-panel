@@ -134,8 +134,8 @@ export const columns: ColumnDef<User>[] = [
 
         try {
           const response = await apiRequest(
-            "updateUser", // Replace with your actual API endpoint
-            "POST",
+            `/users/${id}`, // Replace with your actual API endpoint
+            "PUT",
             { id, status: newStatus }
           );
           if (response.success) {

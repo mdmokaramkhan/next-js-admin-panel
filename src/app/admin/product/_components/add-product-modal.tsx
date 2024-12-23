@@ -32,7 +32,7 @@ export function AddProductSheet({
   const [blockedAmount, setBlockedAmount] = useState<string | null>("");
   const [minLength, setMinLength] = useState<number | string>("");
   const [maxLength, setMaxLength] = useState<number | string>("");
-  const [targetWallet, setTargetWallet] = useState("rch_bal");
+  const [targetWallet, setTargetWallet] = useState<"rch_bal" | "utility_bal" | "dmt_bal">("rch_bal");
   const [loading, setLoading] = useState(false); // Add loading state
 
   // Sync state with productToEdit when it changes
@@ -67,7 +67,7 @@ export function AddProductSheet({
       return;
     }
 
-    const newProduct = {
+    const newProduct: Partial<Product> & Omit<Product, 'id'> = {
       provider_name: providerName,
       provider_code: providerCode,
       provider_type: providerType,
@@ -90,8 +90,8 @@ export function AddProductSheet({
 
     try {
       const response = await apiRequest(
-        productToEdit ? "updateProvider" : "createProvider",
-        "POST",
+        productToEdit ? `providers/${productToEdit.id}` : "providers",
+        productToEdit ? "PUT" : "POST",
         newProduct
       );
       if (response.success) {
@@ -204,7 +204,7 @@ export function AddProductSheet({
             onChange={(e) => setMaxLength(e.target.value)}
             required
           />
-          <Select value={targetWallet} onValueChange={setTargetWallet}>
+          <Select value={targetWallet} onValueChange={(value) => setTargetWallet(value as "rch_bal" | "utility_bal" | "dmt_bal")}>
             <SelectTrigger>
               <SelectValue placeholder="Select Wallet" />
             </SelectTrigger>

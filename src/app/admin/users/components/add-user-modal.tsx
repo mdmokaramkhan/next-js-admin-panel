@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserPlus } from "lucide-react";
-import { roleOptions } from "./columns"; // Assuming roleOptions is imported from columns
+import { roleOptions } from "../columns"; // Assuming roleOptions is imported from columns
 
 interface AddUserDialogProps {
   onSubmit: (formData: any) => void;

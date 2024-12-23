@@ -8,10 +8,10 @@ import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "./data-table";
+import { UserTable } from "./components/user-table";
 import { User, columns } from "./columns";
-import AddUserDialog from "./add-user-modal"; // Import the Add User dialog component
-import TransferMoneyDialog from "./send-money-modal"; // Import the new Transfer Money dialog component
+import AddUserDialog from "./components/add-user-modal"; // Import the Add User dialog component
+import TransferMoneyDialog from "./components/send-money-modal"; // Import the new Transfer Money dialog component
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -40,7 +40,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await apiRequest("allUsers", "GET", null, router);
+      const response = await apiRequest("users", "GET", null, router);
       if (response.success) {
         setUsers(response.data || []);
       } else {
@@ -87,7 +87,7 @@ export default function UsersPage() {
     setIsSubmitting(true);
     try {
       const response = await apiRequest(
-        "createUser",
+        "users",
         "POST",
         { ...formData, mobile_number: parsedMobileNumber },
         router
@@ -123,7 +123,7 @@ export default function UsersPage() {
     setIsSubmitting(true);
     try {
       const response = await apiRequest(
-        "sendBalance",
+        "transfers/sendBalance",
         "POST",
         formData,
         router
@@ -226,7 +226,7 @@ export default function UsersPage() {
           </div>
         </div>
         <Separator />
-        <DataTable
+        <UserTable
           columns={columns}
           data={users}
           pageSizeOptions={[10, 20, 50]}

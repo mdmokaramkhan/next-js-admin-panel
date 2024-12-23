@@ -1,9 +1,13 @@
 "use client";
+import { useState } from "react";
+import { apiRequest } from "@/lib/api";
+import { toast } from "sonner";
 import { ColumnDef } from "@tanstack/react-table";
 import { CellAction } from "./cell-action";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Loader2 } from "lucide-react"; // Add this import
 
 export type Product = {
   id?: number; // Optional, typically Sequelize auto-generates this
@@ -75,9 +79,47 @@ export const columns: ColumnDef<Product>[] = [
   {
     header: "Status",
     accessorKey: "status",
-    cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => (
-      <Switch checked={row.getValue("status")} id="airplane-mode" />
-    ),
+    cell: ({ row }) => {
+      const [status, setStatus] = useState<boolean>(row.getValue("status"));
+
+      const handleStatusChange = async () => {
+        const loadingToast = toast.loading("Updating status...");
+        try {
+          const updatedProduct = {
+            ...row.original,
+            status: !status
+          };
+
+          const response = await apiRequest(
+            `/providers/${row.original.id}`,
+            "PUT",
+            updatedProduct
+          );
+          
+          if (response.success) {
+            setStatus(!status);
+            toast.success("Status updated successfully", {
+              id: loadingToast,
+            });
+          } else {
+            toast.error("Failed to update status", {
+              id: loadingToast,
+            });
+          }
+        } catch (error) {
+          toast.error("Error updating status", {
+            id: loadingToast,
+          });
+        }
+      };
+
+      return (
+        <Switch 
+          checked={status}
+          onCheckedChange={handleStatusChange}
+        />
+      );
+    },
   },
   {
     header: "Minimum Amount",

@@ -3,7 +3,7 @@ import { NavItem } from "@/types";
 export const navItems: NavItem[] = [
   {
     title: "Dashboard",
-    url: "/admin/overview/",
+    url: "/admin/overview",
     icon: "dashboard",
     isActive: false,
     shortcut: ["d", "d"],
@@ -11,7 +11,7 @@ export const navItems: NavItem[] = [
   },
   {
     title: "Users",
-    url: "/admin/users/",
+    url: "/admin/users",
     icon: "user",
     shortcut: ["e", "e"],
     isActive: false,
@@ -19,7 +19,7 @@ export const navItems: NavItem[] = [
   },
   {
     title: "Services",
-    url: "/admin/product/",
+    url: "/admin/product",
     icon: "product",
     shortcut: ["p", "p"],
     isActive: false,
@@ -27,14 +27,14 @@ export const navItems: NavItem[] = [
   },
   {
     title: "Groups",
-    url: "/admin/groups/",
+    url: "/admin/groups",
     icon: "users",
     shortcut: ["p", "p"],
     isActive: false,
     items: [], // No child items
   },{
     title: "Routes",
-    url: "/admin/modules/",
+    url: "/admin/modules",
     icon: "route",
     shortcut: ["r", "r"],
     isActive: false,
@@ -42,7 +42,7 @@ export const navItems: NavItem[] = [
   },
   {
     title: "Reply Formats",
-    url: "/admin/reply-formats/",
+    url: "/admin/reply-formats",
     icon: "messageCircleCode",
     shortcut: ["p", "p"],
     isActive: false,

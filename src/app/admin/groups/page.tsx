@@ -89,7 +89,7 @@ export default function GroupsCashbackManager() {
     setIsGroupsLoading(true);
     setError("");
     try {
-      const response = await apiRequest("allGroups", "GET");
+      const response = await apiRequest("groups", "GET");
       setGroups(response);
     } catch (error) {
       setError("Failed to fetch groups");
@@ -103,7 +103,7 @@ export default function GroupsCashbackManager() {
     setIsCashbackLoading(true);
     setError("");
     try {
-      const response = await apiRequest(`cashbacksByGroup/${groupCode}`, "GET");
+      const response = await apiRequest(`/cashbacks/group/${groupCode}`, "GET");
       // Initialize as empty array if no data
       setCashbackSettings(response?.data || []);
     } catch (error) {
@@ -117,7 +117,7 @@ export default function GroupsCashbackManager() {
 
   const handleCreateGroup = async () => {
     try {
-      await apiRequest("createGroup", "POST", newGroup);
+      await apiRequest("groups", "POST", newGroup);
       fetchGroups();
       setNewGroup({
         group_code: "",
@@ -141,7 +141,7 @@ export default function GroupsCashbackManager() {
         status: true, // Ensure boolean status
       };
 
-      await apiRequest("createCashback", "POST", cashbackData);
+      await apiRequest("cashbacks", "POST", cashbackData);
       fetchCashbackSettings(selectedGroup?.group_code ?? "");
       setNewCashback({
         status: true,
@@ -158,7 +158,7 @@ export default function GroupsCashbackManager() {
   const handleEditGroup = async () => {
     if (!editingGroup) return;
     try {
-      await apiRequest(`updateGroup/${editingGroup.id}`, "PUT", editingGroup);
+      await apiRequest(`groups/${editingGroup.id}`, "PUT", editingGroup);
       fetchGroups();
       setEditingGroup(null);
     } catch (error) {
@@ -178,7 +178,7 @@ export default function GroupsCashbackManager() {
         status: editingCashback.status,
       };
 
-      await apiRequest(`updateCashback`, "POST", updateData);
+      await apiRequest(`cashbacks/${editingCashback.id}`, "PUT", updateData);
       fetchCashbackSettings(selectedGroup?.group_code ?? "");
       setEditingCashback(null);
     } catch (error) {

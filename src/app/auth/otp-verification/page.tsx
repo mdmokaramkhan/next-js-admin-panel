@@ -22,6 +22,7 @@ import Link from "next/link";
 import { apiRequest } from "@/lib/api";
 import { Lock, Loader2 } from "lucide-react";
 import { getAuthToken, setAuthToken } from "@/utils/cookies";
+import AuthLayout from "@/components/auth-layout"; // Add import
 
 const OTPVerification = () => {
   const [otp, setOtp] = useState("");
@@ -44,7 +45,7 @@ const OTPVerification = () => {
   const handleVerify = async () => {
     setLoading(true);
     try {
-      const data = await apiRequest("/verifyOTP", "POST", {
+      const data = await apiRequest("/auth/verify-otp", "POST", {
         username: tempToken,
         userOTP: otp,
       });
@@ -68,8 +69,8 @@ const OTPVerification = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Card>
+    <AuthLayout>
+      <Card className="mx-auto max-w-sm glass-card">
         <CardHeader className="mt-5">
           <CardTitle className="text-center">OTP Verification</CardTitle>
           <CardDescription>
@@ -120,7 +121,7 @@ const OTPVerification = () => {
           </CardContent>
         </CardHeader>
       </Card>
-    </div>
+    </AuthLayout>
   );
 };
 

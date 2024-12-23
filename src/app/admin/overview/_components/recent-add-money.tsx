@@ -26,7 +26,7 @@ export function RecentAddMoney() {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiRequest("getRecentAddMoney", "GET"); // Adjust the endpoint as needed
+        const data = await apiRequest("/transfers/recent", "GET"); // Adjust the endpoint as needed
         if (data.success) {
           setAddMoneyRecords(data.data || []); // Set the fetched data or fallback to an empty array
         } else {

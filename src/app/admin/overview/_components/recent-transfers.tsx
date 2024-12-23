@@ -29,7 +29,7 @@ export function RecentTransfers() {
       setLoading(true); // Start loading
       setError(null); // Clear any previous errors
       try {
-        const data = await apiRequest("getAllTransfers", "GET"); // Adjust the endpoint as needed
+        const data = await apiRequest("transfers", "GET"); // Adjust the endpoint as needed
         if (data.success) {
           setTransfers(data.data || []); // Set transfers data or fallback to an empty array
         } else {

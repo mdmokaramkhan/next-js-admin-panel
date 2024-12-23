@@ -15,11 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ModeToggle } from "@/components/ThemeToggle";
 import { apiRequest } from "@/lib/api";
-import { LogInIcon, Loader2 } from "lucide-react";
+import { LogInIcon, Loader2, AtSign, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { getAuthToken } from "@/utils/cookies";
+import AuthLayout from "@/components/auth-layout"; // Update import
 
-export default function Page() {
+export default function LoginPage() {
 
   const [username, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +42,7 @@ export default function Page() {
     setError("");
 
     try {
-      const data = await apiRequest("/login", "POST", {
+      const data = await apiRequest("auth/login", "POST", {
         username,
         password,
       });
@@ -59,51 +60,69 @@ export default function Page() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center px-4">
-      <Card className="mx-auto max-w-sm">
-        <CardHeader>
+    <AuthLayout>
+      <Card className="mx-auto max-w-sm glass-card">
+        <CardHeader className="space-y-3">
           <div className="grid grid-flow-col justify-between mb-3">
-            <CardTitle className="text-2xl">Login</CardTitle>
+            <div className="space-y-2">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Login
+              </CardTitle>
+              <CardDescription className="text-base">
+                Enter your credentials to access your account
+              </CardDescription>
+            </div>
             <ModeToggle />
           </div>
-          <CardDescription>
-            Enter your username below to login to your account
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="tel"
-                  placeholder="Enter your username"
-                  required
-                  value={username}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">
+                  Username
+                </Label>
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="tel"
+                    placeholder="Enter your username"
+                    required
+                    value={username}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9 transition-all hover:border-primary/50 focus:border-primary"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                   <Link
-                    href="#"
+                    href="/auth/forgot-password"
                     className="ml-auto inline-block text-xs underline"
                   >
                     Forgot your password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  placeholder="Enter your password"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    placeholder="Enter your password"
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9 transition-all hover:border-primary/50 focus:border-primary"
+                  />
+                </div>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full transition-all hover:shadow-lg hover:shadow-primary/25" 
+                disabled={loading}
+              >
                 {loading ? (
                   <>
                     <Loader2 className="animate-spin" />
@@ -118,7 +137,7 @@ export default function Page() {
             </div>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="#" className="underline">
+              <Link href="/auth/signup" className="underline">
                 Sign up
               </Link>
             </div>
@@ -126,6 +145,6 @@ export default function Page() {
           {error && <p className="text-red-500 text-center mt-2">{error}</p>}
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

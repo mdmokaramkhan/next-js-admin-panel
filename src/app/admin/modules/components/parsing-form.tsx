@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 
@@ -49,17 +50,18 @@ export function ParsingForm({ parsing, onSave, onCancel }: ParsingFormProps) {
 
         <div className="grid gap-2">
           <label>Parsing String</label>
-          <Input 
+          <Textarea 
             required
             value={formData.parsing}
             onChange={(e) => handleInputChange('parsing', e.target.value)}
+            className="min-h-[100px] font-mono text-sm"
+            placeholder="Enter parsing configuration..."
           />
         </div>
 
         <div className="grid gap-2">
           <label>Allowed Amounts</label>
-          <Input 
-            required
+          <Input
             value={formData.allowed_amounts}
             onChange={(e) => handleInputChange('allowed_amounts', e.target.value)}
           />

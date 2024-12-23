@@ -24,7 +24,7 @@ export default function Product() {
 
   const fetchProducts = async () => {
     try {
-      const response = await apiRequest("allProviders", "GET", null, router);
+      const response = await apiRequest("providers", "GET", null, router);
       if (response.success) {
         setProducts(response.data || []);
       } else {

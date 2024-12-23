@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Edit, MoreHorizontal, Trash } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { User } from './columns';
@@ -24,7 +24,23 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  const onConfirm = async () => {};
+  const onConfirm = async () => {
+    try {
+      setLoading(true);
+      const response = await apiRequest(`/users/${data.id}`, 'DELETE');
+      if (response.success) {
+        toast.success('User deleted successfully');
+        router.refresh();
+      } else {
+        toast.error('Failed to delete user');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  };
 
   return (
     <>
@@ -34,7 +50,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onConfirm={onConfirm}
         loading={loading}
       />
-      <DropdownMenu modal={false}>
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
             <span className="sr-only">Open menu</span>
@@ -43,9 +59,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
           <DropdownMenuItem
-            onClick={() => router.push(`/admin/user/${data.id}`)}
+            onClick={() => router.push(`/admin/users/${data.id}`)}
+          >
+            <Eye className="mr-2 h-4 w-4" /> View
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => router.push(`/admin/users/edit/${data.id}`)}
           >
             <Edit className="mr-2 h-4 w-4" /> Update
           </DropdownMenuItem>

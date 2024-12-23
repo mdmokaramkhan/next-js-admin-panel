@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 import { DataTableFilterBox } from "@/components/ui/table/data-table-filter";
-import { User,roleOptions } from "./columns";
+import { User, roleOptions } from "../columns";
 import { Input } from "@/components/ui/input";
 import { DataTableResetFilter } from "@/components/ui/table/data-tble-reset";
 import { DataTablePagination } from "@/components/ui/table/data-table-pagination";
@@ -22,7 +22,7 @@ interface DataTableProps<TData, TValue> {
   loading: boolean;
 }
 
-export function DataTable<TData extends User, TValue>({
+export function UserTable<TData extends User, TValue>({
   columns,
   data,
   pageSizeOptions = [10, 20, 30, 50],
@@ -62,6 +62,8 @@ export function DataTable<TData extends User, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     state: { rowSelection },
     onRowSelectionChange: setRowSelection,
+    enableRowSelection: true, // Simplified row selection
+    // Only allow checkbox selection
   });
 
   const totalItems = data.length;

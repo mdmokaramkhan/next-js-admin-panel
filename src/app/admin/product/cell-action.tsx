@@ -33,7 +33,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const onDeleteConfirm = async () => {
     setLoading(true);
     try {
-      const response = await apiRequest("deleteProvider", "DELETE", { id: data.id }, router);
+      const response = await apiRequest(`/providers/${data.id}`, "DELETE", { id: data.id }, router);
       if (response.success) {
         toast.success("Product deleted successfully!");
       } else {

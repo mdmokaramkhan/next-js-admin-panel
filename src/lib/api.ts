@@ -8,6 +8,9 @@ export async function apiRequest(
   body?: any,
   router?: any
 ) {
+  // Ensure endpoint starts with a slash
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     "Cache-Control": "no-cache", // Prevent browser caching
@@ -21,20 +24,25 @@ export async function apiRequest(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/admin/${endpoint}`, {
+    const response = await fetch(`${API_BASE_URL}/admin${normalizedEndpoint}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    const data = await response.json();
+
+    // Better error handling
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "API request failed");
+      throw new Error(data.message || 'API request failed');
     }
 
-    return await response.json();
+    return data;
   } catch (error) {
-    removeAuthToken(router);
-    throw new Error((error as Error).message);
+    console.error('API Error:', error);
+    if ((error as Error).message === "Unauthorized") {
+      removeAuthToken(router);
+    }
+    throw error;
   }
 }

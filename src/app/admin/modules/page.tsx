@@ -19,6 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { toast } from "sonner";
 
 export type Module = {
   id: string;
@@ -27,12 +28,23 @@ export type Module = {
   balance: number;
 }
 
+type Provider = {
+  provider_name: string;
+  provider_code: string;
+  provider_type: string;
+  provider_logo: string;
+}
+
 type Parsing = {
   id: string;
   status: boolean;
   provider_code: string;
   parsing: string;
   allowed_amounts: string;
+  provider: Provider;
+  module_id: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 type ViewMode = "none" | "view" | "edit";
@@ -53,7 +65,7 @@ export default function Overview() {
   useEffect(() => {
     const fetchModules = async () => {
       try {
-        const response = await apiRequest("allModules", "GET");
+        const response = await apiRequest("modules", "GET");
         setModules(response.data || []);
       } catch (error) {
         console.error("Failed to fetch modules:", error);
@@ -77,7 +89,7 @@ export default function Overview() {
 
   const handleDelete = async (module: Module) => {
     try {
-      await apiRequest(`module/${module.id}`, "DELETE");
+      await apiRequest(`modules/${module.id}`, "DELETE");
       setModules(modules.filter(m => m.id !== module.id));
       setDeleteDialog(false);
     } catch (error) {
@@ -87,28 +99,65 @@ export default function Overview() {
 
   const handleSave = async (data: Partial<Module>) => {
     try {
-      const response = await apiRequest(`module/${selectedModule?.id}`, "PUT", data);
-      setModules(modules.map(m => m.id === selectedModule?.id ? response.data : m));
+      let response;
+      if (selectedModule?.id) {
+        // Update existing module
+        response = await apiRequest(`modules/${selectedModule.id}`, "PUT", data);
+        if (response.success) {
+          // Refresh the modules list
+          const updatedModules = await apiRequest("modules", "GET");
+          setModules(updatedModules.data || []);
+        }
+      } else {
+        // Create new module
+        response = await apiRequest('modules', "POST", data);
+        if (response.success) {
+          // Refresh the modules list
+          const updatedModules = await apiRequest("modules", "GET");
+          setModules(updatedModules.data || []);
+        }
+      }
       setViewMode("view");
+      setEditDialog(false);
     } catch (error) {
-      console.error("Failed to update module:", error);
+      console.error("Failed to save module:", error);
     }
   };
 
   const handleStatusChange = async (id: string, status: boolean) => {
     try {
-      await apiRequest(`parsing/${id}`, "PUT", { status });
-      setParsings(parsings.map(p => 
-        p.id === id ? { ...p, status } : p
-      ));
+      if (!selectedModule?.id) {
+        throw new Error('Invalid module ID');
+      }
+
+      const updateData = {
+        id: parsings.find(p => p.id === id)?.id,
+        status,
+        module_id: parseInt(selectedModule.id, 10),
+        provider_code: parsings.find(p => p.id === id)?.provider_code,
+        parsing: parsings.find(p => p.id === id)?.parsing
+      };
+
+      const response = await apiRequest(`parsings/${id}`, "PUT", updateData);
+      
+      if (response.success) {
+        // Refresh the entire parsings list to ensure consistency
+        await fetchParsings(selectedModule.id);
+        toast.success("Parsing status updated successfully!");
+        return true;
+      }
+      toast.error("Failed to update parsing status.");
+      return false;
     } catch (error) {
+      toast.error("Failed to update parsing status.");
       console.error("Failed to update parsing status:", error);
+      return false;
     }
   };
 
   const fetchParsings = async (moduleId: string) => {
     try {
-      const response = await apiRequest(`allParsings`, "GET");
+      const response = await apiRequest(`/parsings/module/${moduleId}`, "GET");
       setParsings(response.data || []);
     } catch (error) {
       console.error("Failed to fetch parsings:", error);
@@ -117,9 +166,15 @@ export default function Overview() {
 
   const handleCreateParsing = async (data: Partial<Parsing>) => {
     try {
-      const response = await apiRequest(`parsing/${selectedModule?.id}`, "POST", data);
+      // Include the module ID in the data
+      const parsingData = {
+        ...data,
+        module_id: selectedModule?.id
+      };
+      const response = await apiRequest(`parsings`, "POST", parsingData);
       setParsings([...parsings, response.data]);
       setParsingFormOpen(false);
+      setSelectedParsing(null); // Reset selected parsing
     } catch (error) {
       console.error("Failed to create parsing:", error);
     }
@@ -127,9 +182,19 @@ export default function Overview() {
 
   const handleUpdateParsing = async (data: Partial<Parsing>) => {
     try {
-      const response = await apiRequest(`parsing/${selectedParsing?.id}`, "PUT", data);
-      setParsings(parsings.map(p => p.id === selectedParsing?.id ? response.data : p));
+      const parsingData = {
+        ...data,
+        module_id: selectedModule?.id
+      };
+      await apiRequest(`/parsings/${selectedParsing?.id}`, "PUT", parsingData);
+      
+      // Refresh the entire parsings list after update
+      if (selectedModule) {
+        await fetchParsings(selectedModule.id);
+      }
+      
       setParsingFormOpen(false);
+      setSelectedParsing(null);
     } catch (error) {
       console.error("Failed to update parsing:", error);
     }
@@ -137,7 +202,7 @@ export default function Overview() {
 
   const handleDeleteParsing = async () => {
     try {
-      await apiRequest(`parsing/${selectedParsing?.id}`, "DELETE");
+      await apiRequest(`parsings/${selectedParsing?.id}`, "DELETE");
       setParsings(parsings.filter(p => p.id !== selectedParsing?.id));
       setDeleteParsingDialog(false);
     } catch (error) {
@@ -264,7 +329,10 @@ export default function Overview() {
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={() => setParsingFormOpen(true)}>
+                      <Button onClick={() => {
+                        setSelectedParsing(null); // Reset selected parsing
+                        setParsingFormOpen(true);
+                      }}>
                         Add Parsing
                       </Button>
                     </div>
@@ -342,7 +410,15 @@ export default function Overview() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Sheet open={parsingFormOpen} onOpenChange={setParsingFormOpen}>
+      <Sheet 
+        open={parsingFormOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedParsing(null); // Reset selected parsing when closing
+          }
+          setParsingFormOpen(open);
+        }}
+      >
         <SheetContent side="right" className="w-[400px] sm:w-[540px]">
           <SheetHeader>
             <SheetTitle>{selectedParsing ? "Edit" : "Add"} Parsing</SheetTitle>
