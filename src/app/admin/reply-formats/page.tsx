@@ -22,7 +22,7 @@ export default function ReplyFormats() {
   const fetchReplyFormats = async () => {
     try {
       const response = await apiRequest(
-        "allMessageTemplates",
+        "message-templates",
         "GET",
         null,
         router
