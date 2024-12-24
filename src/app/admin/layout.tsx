@@ -11,7 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset>
         <Header />
-        <Separator orientation="horizontal" className="h-px bg-gray-200" />
+        <Separator orientation="horizontal" className="h-px" />
         {children}
       </SidebarInset>
     </SidebarProvider>

@@ -39,8 +39,8 @@ export async function apiRequest(
 
     return data;
   } catch (error) {
-    console.error('API Error:', error);
-    if ((error as Error).message === "Unauthorized") {
+    console.error('API Error:', (error as Error).message );
+    if ((error as Error).message === "Session expired or logged out" || (error as Error).message === "Unauthorized Access") {
       removeAuthToken(router);
     }
     throw error;

@@ -132,7 +132,7 @@ export const columns: ColumnDef<User>[] = [
       const handleStatusChange = async (newStatus: boolean) => {
         const id = row.original.id; // Assuming the user has an id
         setStatus(newStatus); // Optimistic UI update (changes immediately on toggle)
-
+        const loadingToast = toast.loading("Updating status...");
         try {
           const response = await apiRequest(
             `/users/${id}`, // Replace with your actual API endpoint
@@ -140,13 +140,19 @@ export const columns: ColumnDef<User>[] = [
             { id, status: newStatus }
           );
           if (response.success) {
-            toast.success("User status updated successfully!");
+            toast.success("User status updated successfully!", {
+              id: loadingToast,
+            });
           } else {
-            toast.error("Failed to update status.");
+            toast.error("Failed to update status", {
+              id: loadingToast,
+            });
             setStatus(initialStatus); // Revert to the previous status on failure
           }
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : "Error fetching users");
+          toast.error(
+            error instanceof Error ? error.message : "Error fetching users"
+          );
           setStatus(initialStatus); // Revert to the previous status on error
         }
       };
@@ -187,7 +193,7 @@ export const columns: ColumnDef<User>[] = [
           name: row.original.owner_name,
           shopName: row.original.shop_name ?? null, // Convert undefined to null
           mobile: row.original.mobile_number,
-          role: row.original.groupDetails?.group_name || 'N/A'
+          role: row.original.groupDetails?.group_name || "N/A",
         },
         rch_bal: row.original.rch_bal,
         rch_min_bal: row.original.rch_min_bal,
@@ -197,14 +203,13 @@ export const columns: ColumnDef<User>[] = [
         dmt_min_bal: row.original.dmt_min_bal,
       };
 
-
       return (
         <div className="flex items-center gap-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={() => setIsDialogOpen(true)}
                 >
@@ -229,18 +234,23 @@ export const columns: ColumnDef<User>[] = [
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => {
-              window.dispatchEvent(new CustomEvent('openTransferDialog', { 
-                detail: { userId: row.original.id, mobileNumber: row.original.mobile_number }
-              }));
+              window.dispatchEvent(
+                new CustomEvent("openTransferDialog", {
+                  detail: {
+                    userId: row.original.id,
+                    mobileNumber: row.original.mobile_number,
+                  },
+                })
+              );
             }}
           >
             <Send className="h-4 w-4" />
           </Button>
-          <BalanceDialog 
+          <BalanceDialog
             isOpen={isDialogOpen}
             onClose={() => setIsDialogOpen(false)}
             balances={balances}
