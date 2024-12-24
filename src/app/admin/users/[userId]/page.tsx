@@ -8,7 +8,7 @@ import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Edit } from "lucide-react";
+import { ChevronLeft, Edit, SendHorizontal } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import TransferMoneyDialog from "../components/send-money-modal";
+import { User } from "../columns";
 
 interface PageProps {
   params: Promise<{ userId: string }>;
@@ -37,6 +39,13 @@ export default function UserDetailsPage({ params }: PageProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [transferFormData, setTransferFormData] = useState({
+    amount: "",
+    receiptMobileNumber: "",
+    targetWallet: "",
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -81,6 +90,69 @@ export default function UserDetailsPage({ params }: PageProps) {
     };
   }, [resolvedParams.userId, router]);
 
+  // Modified send money handler
+  const handleSendMoney = (wallet?: string) => {
+    if (userData) {
+      setTransferFormData({
+        amount: "",
+        receiptMobileNumber: userData.mobile_number.toString(),
+        targetWallet: wallet || "rch_bal", // Default to recharge wallet if not specified
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  // Add click handlers for each wallet type
+  const handleRechargeSend = () => handleSendMoney("rch_bal");
+  const handleUtilitySend = () => handleSendMoney("utility_bal");
+  const handleDMTSend = () => handleSendMoney("dmt_bal");
+
+  const handleTransferChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { id, value } = e.target;
+    setTransferFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleTransferSelectChange = (value: string, field: string) => {
+    setTransferFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleTransferSubmit = async (formData: {
+    amount: number;
+    receiptMobileNumber: string;
+    targetWallet: string;
+  }) => {
+    try {
+      const response = await apiRequest("transactions/transfer", "POST", formData);
+      if (response.success) {
+        toast.success("Money transferred successfully");
+        setIsDialogOpen(false);
+        // Refresh user data after transfer
+        fetchUser();
+      } else {
+        toast.error("Transfer failed");
+      }
+    } catch (error) {
+      toast.error("Error processing transfer");
+    }
+  };
+
+  // Add users fetch effect
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await apiRequest("users", "GET");
+        if (response.success) {
+          setUsers(response.data);
+        }
+      } catch (error) {
+        toast.error("Error fetching users");
+      }
+    };
+    fetchUsers();
+  }, []);
+
   // Fix 4: Better loading state
   if (loading) {
     return (
@@ -122,11 +194,19 @@ export default function UserDetailsPage({ params }: PageProps) {
             </Button>
             <Heading title="User Details" description="View user information" />
           </div>
-          <Button
-            onClick={() => router.push(`/admin/users/edit/${userData.id}`)}
-          >
-            <Edit className="mr-2 h-4 w-4" /> Edit User
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => handleSendMoney()}
+              variant="outline"
+            >
+              <SendHorizontal className="mr-2 h-4 w-4" /> Send Money
+            </Button>
+            <Button
+              onClick={() => router.push(`/admin/users/edit/${userData.id}`)}
+            >
+              <Edit className="mr-2 h-4 w-4" /> Edit User
+            </Button>
+          </div>
         </div>
         <Separator />
 
@@ -195,7 +275,7 @@ export default function UserDetailsPage({ params }: PageProps) {
             </CardContent>
           </Card>
 
-          {/* Wallet Information */}
+          {/* Modified Wallet Information Card */}
           <Card>
             <CardHeader>
               <CardTitle>Wallet Information</CardTitle>
@@ -204,20 +284,65 @@ export default function UserDetailsPage({ params }: PageProps) {
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Recharge Balance</p>
-                    <p className="text-2xl font-bold">₹{userData.rch_bal.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">Min: ₹{userData.rch_min_bal.toLocaleString()}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Recharge Balance
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ₹{userData.rch_bal.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Min: ₹{userData.rch_min_bal.toLocaleString()}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRechargeSend}
+                      className="w-full mt-2"
+                    >
+                      <SendHorizontal className="w-4 h-4 mr-2" />
+                      Send to Recharge
+                    </Button>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Utility Balance</p>
-                    <p className="text-2xl font-bold">₹{userData.utility_bal.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">Min: ₹{userData.utility_min_bal.toLocaleString()}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Utility Balance
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ₹{userData.utility_bal.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Min: ₹{userData.utility_min_bal.toLocaleString()}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUtilitySend}
+                      className="w-full mt-2"
+                    >
+                      <SendHorizontal className="w-4 h-4 mr-2" />
+                      Send to Utility
+                    </Button>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">DMT Balance</p>
-                    <p className="text-2xl font-bold">₹{userData.dmt_bal.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">Min: ₹{userData.dmt_min_bal.toLocaleString()}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      DMT Balance
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ₹{userData.dmt_bal.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Min: ₹{userData.dmt_min_bal.toLocaleString()}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDMTSend}
+                      className="w-full mt-2"
+                    >
+                      <SendHorizontal className="w-4 h-4 mr-2" />
+                      Send to DMT
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -253,6 +378,22 @@ export default function UserDetailsPage({ params }: PageProps) {
           </Card>
         </div>
       </div>
+
+      {/* Add TransferMoneyDialog component */}
+      <TransferMoneyDialog
+        onSubmit={handleTransferSubmit}
+        isSubmitting={loading}
+        isDialogOpen={isDialogOpen}
+        setIsDialogOpen={setIsDialogOpen}
+        users={users}
+        formData={transferFormData}
+        handleChange={handleTransferChange}
+        handleSelectChange={handleTransferSelectChange}
+      />
     </PageContainer>
   );
 }
+function fetchUser() {
+  throw new Error("Function not implemented.");
+}
+
