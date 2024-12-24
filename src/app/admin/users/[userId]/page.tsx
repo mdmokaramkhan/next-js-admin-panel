@@ -31,9 +31,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TransferMoneyDialog from "../components/send-money-modal";
 import { User } from "../columns";
-import { transferColumns, Transfer } from "./columns";
+import { transferColumns, Transfer } from "./transfers-columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "./data-table";
+import { transactionColumns, Transaction } from "./transactions-columns";
 
 interface PageProps {
   params: Promise<{ userId: string }>;
@@ -71,6 +72,8 @@ export default function UserDetailsPage({ params }: PageProps) {
 
   // Add transfers state
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  // Add transactions state
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   // Fetch user data
   useEffect(() => {
@@ -108,29 +111,43 @@ export default function UserDetailsPage({ params }: PageProps) {
 
   // Add fetch transfers effect
   useEffect(() => {
-    const fetchTransfers = async () => {
+    const fetchData = async () => {
       if (!date.from || !date.to) return;
       setTabLoading(true);
       try {
-        const response = await apiRequest(
-          `transfers/date-range?startDate=${format(
-            date.from,
-            "yyyy-MM-dd"
-          )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
-          "GET"
-        );
-        if (response?.success) {
-          setTransfers(response.data);
+        let response;
+        if (activeTab === "transfers") {
+          response = await apiRequest(
+            `transfers/date-range?startDate=${format(
+              date.from,
+              "yyyy-MM-dd"
+            )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
+            "GET"
+          );
+          if (response?.success) {
+            setTransfers(response.data);
+          }
+        } else if (activeTab === "transactions") {
+          response = await apiRequest(
+            `transactions/date-range?startDate=${format(
+              date.from,
+              "yyyy-MM-dd"
+            )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
+            "GET"
+          );
+          if (response?.success) {
+            setTransactions(response.data);
+          }
         }
       } catch {
-        toast.error("Failed to fetch transfers");
+        toast.error(`Failed to fetch ${activeTab}`);
       } finally {
         setTabLoading(false);
       }
     };
 
-    if (activeTab === "transfers") {
-      fetchTransfers();
+    if (activeTab === "transfers" || activeTab === "transactions") {
+      fetchData();
     }
   }, [date, activeTab]);
 
@@ -538,7 +555,15 @@ export default function UserDetailsPage({ params }: PageProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {tabLoading ? <TabLoadingSkeleton /> : <h1>Transactions</h1>}
+                  {tabLoading ? (
+                    <TabLoadingSkeleton />
+                  ) : (
+                    <DataTable
+                      columns={transactionColumns}
+                      data={transactions}
+                      searchKey="number"
+                    />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
