@@ -1,14 +1,26 @@
 "use client";
 
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ChevronLeft, Edit, SendHorizontal } from "lucide-react";
+
 import { apiRequest } from "@/lib/api";
 import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Edit, SendHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -16,126 +28,133 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TransferMoneyDialog from "../components/send-money-modal";
 import { User } from "../columns";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { transferColumns, Transfer } from "./columns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "./data-table";
 
 interface PageProps {
   params: Promise<{ userId: string }>;
 }
 
-function formatDate(dateString: string | null | undefined) {
-  if (!dateString) return 'N/A';
-  try {
-    return format(new Date(dateString), 'PPP');
-  } catch {
-    return 'Invalid date';
-  }
-}
-
 export default function UserDetailsPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
+
+  // Core state
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
+
+  // Transfer dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [transferFormData, setTransferFormData] = useState({
     amount: "",
     receiptMobileNumber: "",
-    targetWallet: "",
+    targetWallet: "rch_bal",
   });
+
+  // Tab state
   const [activeTab, setActiveTab] = useState("transactions");
-  const [, setTransactions] = useState([]);
-  const [, setTransfers] = useState([]);
-  const [, setLoginLogs] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
+  // Modify date range state to use current date for both from and to
+  const [date, setDate] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: new Date(),
+    to: new Date(),
+  });
 
-    const fetchUser = async () => {
+  // Add transfers state
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
       try {
-        // Fix 1: Add leading slash to API endpoint
-        const response = await apiRequest(`/users/${resolvedParams.userId}`, "GET");
-        
-        // Fix 2: Improved error handling
-        if (mounted) {
-          if (response && response.success && response.data) {
-            setUserData(response.data);
-          } else {
-            console.error('API Response:', response); // For debugging
-            toast.error(response?.message || "Failed to fetch user data");
-            // Fix 3: Add delay before redirect
-            setTimeout(() => {
-              router.push("/admin/users");
-            }, 1500);
-          }
+        const response = await apiRequest(
+          `/users/${resolvedParams.userId}`,
+          "GET"
+        );
+        if (response?.success && response.data) {
+          setUserData(response.data || []);
+        } else {
+          toast.error("Failed to fetch user data");
+          setTimeout(() => router.push("/admin/users"), 1500);
         }
-      } catch (error) {
-        console.error('Fetch Error:', error); // For debugging
-        if (mounted) {
-          toast.error("Error fetching user data");
-          setTimeout(() => {
-            router.push("/admin/users");
-          }, 1500);
-        }
+      } catch {
+        toast.error("Error fetching user data");
+        setTimeout(() => router.push("/admin/users"), 1500);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    fetchUser();
-
-    return () => {
-      mounted = false;
-    };
+    fetchUserData();
   }, [resolvedParams.userId, router]);
 
-  // Modified send money handler
-  const handleSendMoney = (wallet?: string) => {
-    if (userData) {
-      setTransferFormData({
-        amount: "",
-        receiptMobileNumber: userData.mobile_number.toString(),
-        targetWallet: wallet || "rch_bal", // Default to recharge wallet if not specified
-      });
+  // Fetch users for transfer dialog
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const response = await apiRequest("users", "GET");
+      if (response?.success) setUsers(response.data);
+    };
+    fetchUsers();
+  }, []);
+
+  // Add fetch transfers effect
+  useEffect(() => {
+    const fetchTransfers = async () => {
+      if (!date.from || !date.to) return;
+      setTabLoading(true);
+      try {
+        const response = await apiRequest(
+          `transfers/date-range?startDate=${format(
+            date.from,
+            "yyyy-MM-dd"
+          )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
+          "GET"
+        );
+        if (response?.success) {
+          setTransfers(response.data);
+        }
+      } catch {
+        toast.error("Failed to fetch transfers");
+      } finally {
+        setTabLoading(false);
+      }
+    };
+
+    if (activeTab === "transfers") {
+      fetchTransfers();
     }
+  }, [date, activeTab]);
+
+  // Transfer money handlers
+  const handleSendMoney = (wallet = "rch_bal") => {
+    if (!userData) return;
+    setTransferFormData({
+      amount: "",
+      receiptMobileNumber: userData.mobile_number.toString(),
+      targetWallet: wallet,
+    });
     setIsDialogOpen(true);
   };
 
-  // Add click handlers for each wallet type
-  const handleRechargeSend = () => handleSendMoney("rch_bal");
-  const handleUtilitySend = () => handleSendMoney("utility_bal");
-  const handleDMTSend = () => handleSendMoney("dmt_bal");
-
-  const handleTransferChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { id, value } = e.target;
-    setTransferFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleTransferSelectChange = (value: string, field: string) => {
-    setTransferFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleTransferSubmit = async (formData: {
-    amount: number;
-    receiptMobileNumber: string;
-    targetWallet: string;
-  }) => {
+  const handleTransferSubmit = async (formData: any) => {
     try {
-      const response = await apiRequest("transactions/transfer", "POST", formData);
+      const response = await apiRequest(
+        "transactions/transfer",
+        "POST",
+        formData
+      );
       if (response.success) {
         toast.success("Money transferred successfully");
         setIsDialogOpen(false);
-        // Refresh user data after transfer
-        fetchUser();
       } else {
         toast.error("Transfer failed");
       }
@@ -144,85 +163,90 @@ export default function UserDetailsPage({ params }: PageProps) {
     }
   };
 
-  // Add users fetch effect
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await apiRequest("users", "GET");
-        if (response.success) {
-          setUsers(response.data);
-        }
-      } catch {
-        toast.error("Error fetching users");
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    const fetchTabData = async () => {
-      if (!userData?.id) return;
-      setTabLoading(true);
-      try {
-        const endpoint = activeTab === "transactions" 
-          ? `transactions?userId=${userData.id}`
-          : activeTab === "transfers"
-          ? `transfers?userId=${userData.id}`
-          : `login-logs?userId=${userData.id}`;
-        
-        const response = await apiRequest(endpoint, "GET");
-        if (response.success) {
-          switch (activeTab) {
-            case "transactions":
-              setTransactions(response.data);
-              break;
-            case "transfers":
-              setTransfers(response.data);
-              break;
-            case "login-logs":
-              setLoginLogs(response.data);
-              break;
-          }
-        }
-      } catch {
-        toast.error(`Error fetching ${activeTab}`);
-      } finally {
-        setTabLoading(false);
-      }
-    };
-
-    fetchTabData();
-  }, [activeTab, userData?.id]);
-
-  // Fix 4: Better loading state
   if (loading) {
     return (
       <PageContainer>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center space-y-4">
-            <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent mx-auto"></div>
-            <p className="text-muted-foreground">Loading user details...</p>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-[200px]" />
+                <Skeleton className="h-4 w-[300px]" />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-[120px]" />
+              <Skeleton className="h-10 w-[120px]" />
+            </div>
+          </div>
+          <Separator />
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-[150px]" />
+                  <Skeleton className="h-4 w-[200px]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((j) => (
+                      <div key={j} className="space-y-2">
+                        <Skeleton className="h-4 w-[100px]" />
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </PageContainer>
     );
   }
 
-  // Fix 5: Check for userData before rendering
   if (!userData) {
     return (
       <PageContainer>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <p className="text-muted-foreground">No user data found</p>
-          </div>
+        <div className="text-center">
+          <p className="text-muted-foreground">No user data found</p>
         </div>
       </PageContainer>
     );
   }
 
+  // Replace the existing TabLoadingSkeleton with this new version
+  const TabLoadingSkeleton = () => (
+    <div>
+      <div className="border rounded-md">
+        <div className="border-b">
+          <div className="flex h-10 items-center gap-4 px-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-4 w-[100px]" />
+            ))}
+          </div>
+        </div>
+        <div className="p-0">
+          {[1, 2, 3, 4, 5].map((row) => (
+            <div
+              key={row}
+              className="flex items-center gap-4 border-b p-4 last:border-0"
+            >
+              {[1, 2, 3, 4, 5].map((col) => (
+                <Skeleton key={col} className="h-4 w-[100px]" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <PageContainer>
+      {/* Header */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -236,10 +260,7 @@ export default function UserDetailsPage({ params }: PageProps) {
             <Heading title="User Details" description="" />
           </div>
           <div className="flex items-center gap-4">
-            <Button
-              onClick={() => handleSendMoney()}
-              variant="outline"
-            >
+            <Button onClick={() => handleSendMoney()} variant="outline">
               <SendHorizontal className="mr-2 h-4 w-4" /> Send Money
             </Button>
             <Button
@@ -251,34 +272,47 @@ export default function UserDetailsPage({ params }: PageProps) {
         </div>
         <Separator />
 
+        {/* User information cards */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* Basic Information */}
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
-              <CardDescription>User's personal and shop details</CardDescription>
+              <CardDescription>
+                User's personal and shop details
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Owner Name</p>
-                  <p>{userData.owner_name || 'N/A'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Owner Name
+                  </p>
+                  <p>{userData.owner_name || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Shop Name</p>
-                  <p>{userData.shop_name || 'N/A'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Shop Name
+                  </p>
+                  <p>{userData.shop_name || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </p>
                   <p>{userData.email_address}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Phone
+                  </p>
                   <p>+91 {userData.mobile_number}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-sm font-medium text-muted-foreground">Address</p>
-                  <p>{userData.address || 'N/A'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Address
+                  </p>
+                  <p>{userData.address || "N/A"}</p>
                 </div>
               </div>
             </CardContent>
@@ -293,24 +327,36 @@ export default function UserDetailsPage({ params }: PageProps) {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </p>
                   <Badge variant={userData.status ? "default" : "destructive"}>
                     {userData.status ? "Active" : "Inactive"}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Role</p>
-                  <Badge variant="outline">{userData.groupDetails?.group_name}</Badge>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Role
+                  </p>
+                  <Badge variant="outline">
+                    {userData.groupDetails?.group_name}
+                  </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">KYC Status</p>
-                  <Badge variant={userData.isVerified ? "default" : "secondary"}>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    KYC Status
+                  </p>
+                  <Badge
+                    variant={userData.isVerified ? "default" : "secondary"}
+                  >
                     {userData.isVerified ? "Verified" : "Pending"}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Created At</p>
-                  <p>{formatDate(userData.createdAt)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Created At
+                  </p>
+                  <p>{format(new Date(userData.createdAt), "PPP")}</p>
                 </div>
               </div>
             </CardContent>
@@ -320,7 +366,9 @@ export default function UserDetailsPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Wallet Information</CardTitle>
-              <CardDescription>Balance and minimum balance details</CardDescription>
+              <CardDescription>
+                Balance and minimum balance details
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -338,7 +386,7 @@ export default function UserDetailsPage({ params }: PageProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleRechargeSend}
+                      onClick={() => handleSendMoney("rch_bal")}
                       className="w-full mt-2"
                     >
                       <SendHorizontal className="w-4 h-4 mr-2" />
@@ -358,7 +406,7 @@ export default function UserDetailsPage({ params }: PageProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleUtilitySend}
+                      onClick={() => handleSendMoney("utility_bal")}
                       className="w-full mt-2"
                     >
                       <SendHorizontal className="w-4 h-4 mr-2" />
@@ -378,7 +426,7 @@ export default function UserDetailsPage({ params }: PageProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleDMTSend}
+                      onClick={() => handleSendMoney("dmt_bal")}
                       className="w-full mt-2"
                     >
                       <SendHorizontal className="w-4 h-4 mr-2" />
@@ -399,110 +447,157 @@ export default function UserDetailsPage({ params }: PageProps) {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Callback URL</p>
-                  <p className="break-all">{userData.callback_url || 'Not set'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Callback URL
+                  </p>
+                  <p className="break-all">
+                    {userData.callback_url || "Not set"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Last IP Address</p>
-                  <p>{userData.ip_address || 'Not available'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Last IP Address
+                  </p>
+                  <p>{userData.ip_address || "Not available"}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Failed Login Attempts</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Failed Login Attempts
+                  </p>
                   <p>{userData.failedLoginAttempts}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-                  <p>{formatDate(userData.updatedAt)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Last Updated
+                  </p>
+                  <p>{format(new Date(userData.updatedAt), "PPP")}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Tabs section */}
+        <div className="mt-6">
+          <Tabs
+            defaultValue="transactions"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="transfers">Transfers</TabsTrigger>
+                <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
+              </TabsList>
+              {/* Date range picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-[300px] justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon />
+                    {date?.from ? (
+                      date.to ? (
+                        <>
+                          {format(date.from, "LLL dd, y")} -{" "}
+                          {format(date.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(date.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={(range) => setDate({ from: range?.from, to: range?.to })}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <TabsContent value="transactions">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transactions History</CardTitle>
+                  <CardDescription>
+                    View all transactions made by this user
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tabLoading ? <TabLoadingSkeleton /> : <h1>Transactions</h1>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="transfers">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transfer History</CardTitle>
+                  <CardDescription>
+                    View all transfers made by this user
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tabLoading ? (
+                    <TabLoadingSkeleton />
+                  ) : (
+                    <DataTable
+                      columns={transferColumns}
+                      data={transfers}
+                      searchKey="end_shop_name"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="login-logs">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Login History</CardTitle>
+                  <CardDescription>View user's login activity</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tabLoading ? <TabLoadingSkeleton /> : <h1>Login infos</h1>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Transfer money dialog */}
+        <TransferMoneyDialog
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          onSubmit={handleTransferSubmit}
+          users={users}
+          formData={transferFormData}
+          handleChange={(e) =>
+            setTransferFormData((prev) => ({
+              ...prev,
+              [e.target.id]: e.target.value,
+            }))
+          }
+          handleSelectChange={(value, field) =>
+            setTransferFormData((prev) => ({ ...prev, [field]: value }))
+          }
+          isSubmitting={loading}
+        />
       </div>
-
-      {/* Add this before the final closing div of PageContainer */}
-      <div className="mt-6">
-        <Tabs defaultValue="transactions" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="transfers">Transfers</TabsTrigger>
-            <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="transactions" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Transactions History</CardTitle>
-                <CardDescription>View all transactions made by this user</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tabLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
-                  </div>
-                ) : (
-                  // <DataTable columns={transactionColumns} data={transactions} />
-                  <h1>Transactions</h1>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="transfers" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Transfer History</CardTitle>
-                <CardDescription>View all transfers made by this user</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tabLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
-                  </div>
-                ) : (
-                  // <DataTable columns={transferColumns} data={transfers} />
-                  <h1>Transfers</h1>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="login-logs" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Login History</CardTitle>
-                <CardDescription>View user's login activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tabLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
-                  </div>
-                ) : (
-                  // <DataTable columns={loginColumns} data={loginLogs} />
-                  <h1>Login infos</h1>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Add TransferMoneyDialog component */}
-      <TransferMoneyDialog
-        onSubmit={handleTransferSubmit}
-        isSubmitting={loading}
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-        users={users}
-        formData={transferFormData}
-        handleChange={handleTransferChange}
-        handleSelectChange={handleTransferSelectChange}
-      />
     </PageContainer>
   );
 }
-function fetchUser() {
-  throw new Error("Function not implemented.");
-}
-
