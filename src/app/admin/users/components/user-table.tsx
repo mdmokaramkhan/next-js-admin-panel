@@ -71,13 +71,13 @@ export function UserTable<TData extends User, TValue>({
   const filteredDataCount = table.getPrePaginationRowModel().rows.length;
 
   // Function to get selected rows
-  const getSelectedRows = () => {
-    const selectedRows = table
-      .getSelectedRowModel()
-      .rows.map((row) => row.original);
-    console.log("Selected Rows: ", selectedRows);
-    return selectedRows;
-  };
+  // const getSelectedRows = () => {
+  //   const selectedRows = table
+  //     .getSelectedRowModel()
+  //     .rows.map((row) => row.original);
+  //   console.log("Selected Rows: ", selectedRows);
+  //   return selectedRows;
+  // };
 
   return (
     <div className="space-y-4">

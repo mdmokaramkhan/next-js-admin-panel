@@ -60,7 +60,7 @@ export default function AddMoneyModal() {
   const handleVerifyAndAddBalance = async () => {
     setLoading(true);
     try {
-      const data = await apiRequest("addAdminBalance", "POST", {
+      await apiRequest("addAdminBalance", "POST", {
         userOTP: parseInt(otp, 10),
         token: tempToken,
       });

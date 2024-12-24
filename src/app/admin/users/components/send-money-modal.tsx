@@ -20,11 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Send, Search, Check, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Wallet, Send, Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface TransferMoneyDialogProps {
   onSubmit: (formData: {

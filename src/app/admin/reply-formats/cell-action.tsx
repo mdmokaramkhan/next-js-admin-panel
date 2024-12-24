@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MessageTemplate } from './columns';
 import { Edit, MoreHorizontal, Trash } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { TemplateFormModal } from './template-form-modal';
 import { apiRequest } from "@/lib/api";
@@ -25,7 +24,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onRefresh }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const router = useRouter();
 
   const onConfirm = async () => {
     try {
@@ -38,7 +36,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onRefresh }) => {
       } else {
         toast.error(response.message || 'Error deleting template');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error deleting template');
     } finally {
       setLoading(false);

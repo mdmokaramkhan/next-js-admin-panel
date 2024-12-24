@@ -140,7 +140,7 @@ export default function EditUserPage({ params }: PageProps) {
         setUsers(response.data);
       }
     } catch (error) {
-      toast.error("Error fetching users");
+      toast.error(error instanceof Error ? error.message : "Error fetching users");
     }
   };
 
@@ -234,7 +234,7 @@ export default function EditUserPage({ params }: PageProps) {
         toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error("Error updating status");
+      toast.error(error instanceof Error ? error.message : "Error fetching users");
     }
   };
 
@@ -259,7 +259,7 @@ export default function EditUserPage({ params }: PageProps) {
         toast.error("Transfer failed");
       }
     } catch (error) {
-      toast.error("Error processing transfer");
+      toast.error(error instanceof Error ? error.message : "Error fetching users");
     }
   };
 

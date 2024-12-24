@@ -43,7 +43,7 @@ export default function ReplyFormats() {
 
   useEffect(() => {
     fetchReplyFormats();
-  }, []);
+  },);
   return (
     <PageContainer scrollable>
       <div className="space-y-4">

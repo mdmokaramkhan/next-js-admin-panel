@@ -18,14 +18,7 @@ import {
 import { navItems } from "@/constants/data";
 import { Icons } from "@/components/icons";
 import {
-  BadgeCheck,
-  Bell,
   ChevronRight,
-  ChevronsUpDown,
-  CreditCard,
-  GalleryVerticalEnd,
-  LogOut,
-  Plus,
   Power,
   Server,
 } from "lucide-react";

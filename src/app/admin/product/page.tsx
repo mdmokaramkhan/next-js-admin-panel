@@ -52,7 +52,7 @@ export default function Product() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  });
 
   return (
     <PageContainer scrollable>

@@ -8,7 +8,6 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Settings2, Pencil, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ModuleDetails } from "./components/module-details";
 import { ModuleForm } from "./components/module-form";
 import { ParsingTable } from "./components/parsing-table";
 import { ParsingForm } from "./components/parsing-form";
@@ -53,10 +52,9 @@ export default function Overview() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("none");
+  const [, setViewMode] = useState<ViewMode>("none");
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [parsings, setParsings] = useState<Parsing[]>([]);
-  const [detailsDialog, setDetailsDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
   const [parsingFormOpen, setParsingFormOpen] = useState(false);
   const [selectedParsing, setSelectedParsing] = useState<Parsing | null>(null);
@@ -76,16 +74,6 @@ export default function Overview() {
 
     fetchModules();
   }, []);
-
-  const handleView = (module: Module) => {
-    setSelectedModule(module);
-    setViewMode("view");
-  };
-
-  const handleEdit = (module: Module) => {
-    setSelectedModule(module);
-    setViewMode("edit");
-  };
 
   const handleDelete = async (module: Module) => {
     try {

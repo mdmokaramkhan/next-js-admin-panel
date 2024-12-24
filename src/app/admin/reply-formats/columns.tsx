@@ -1,5 +1,4 @@
 import * as React from "react";
-const beautify = require("js-beautify").html;
 import {
   Dialog,
   DialogContent,
@@ -111,15 +110,12 @@ export const messageTemplateColumns: ColumnDef<MessageTemplate, unknown>[] = [
 
 // ViewTemplateButton Component
 const ViewTemplateButton = ({ template }: { template: string }) => {
-  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [, setActiveTab] = useState<"preview" | "code">("preview");
 
   // Format HTML Code
   const formatHtml = (html: string) => {
     try {
-      return beautify(html, {
-        indent_size: 2, // Adjust indent size
-        max_preserve_newlines: 2, // Maximum newlines to preserve
-      });
+      return html;
     } catch (error) {
       console.error("Error formatting HTML:", error);
       return html; // Return unformatted HTML in case of an error

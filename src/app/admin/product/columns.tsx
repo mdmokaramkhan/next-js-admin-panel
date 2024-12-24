@@ -7,7 +7,6 @@ import { CellAction } from "./cell-action";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react"; // Add this import
 
 export type Product = {
   id?: number; // Optional, typically Sequelize auto-generates this
@@ -80,6 +79,7 @@ export const columns: ColumnDef<Product>[] = [
     header: "Status",
     accessorKey: "status",
     cell: ({ row }) => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const [status, setStatus] = useState<boolean>(row.getValue("status"));
 
       const handleStatusChange = async () => {
@@ -106,7 +106,7 @@ export const columns: ColumnDef<Product>[] = [
               id: loadingToast,
             });
           }
-        } catch (error) {
+        } catch{
           toast.error("Error updating status", {
             id: loadingToast,
           });

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api"; // Adjust the path as needed
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 interface AddMoney {
@@ -44,13 +44,13 @@ export function RecentAddMoney() {
   }, []);
 
   // Function to format the amount to INR currency format
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  // const formatAmount = (amount: number) => {
+  //   return new Intl.NumberFormat("en-IN", {
+  //     style: "currency",
+  //     currency: "INR",
+  //     minimumFractionDigits: 0,
+  //   }).format(amount);
+  // };
 
   if (loading) {
     return (

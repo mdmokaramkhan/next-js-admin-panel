@@ -167,11 +167,11 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   useEffect(() => {
     const handleTransferDialog = (event: CustomEvent) => {
-      const { userId, mobileNumber } = event.detail;
+      const { mobileNumber } = event.detail;
       setTransferData(prev => ({
         ...prev,
         receiptMobileNumber: mobileNumber.toString()

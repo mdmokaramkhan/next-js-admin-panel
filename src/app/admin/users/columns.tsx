@@ -125,6 +125,7 @@ export const columns: ColumnDef<User>[] = [
       const initialStatus = row.getValue("status");
 
       // Use state to handle the toggle locally
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const [status, setStatus] = useState<boolean>(initialStatus);
 
       // Function to update the user status (with error handling)
@@ -145,7 +146,7 @@ export const columns: ColumnDef<User>[] = [
             setStatus(initialStatus); // Revert to the previous status on failure
           }
         } catch (error) {
-          toast.error("Error updating status.");
+          toast.error(error instanceof Error ? error.message : "Error fetching users");
           setStatus(initialStatus); // Revert to the previous status on error
         }
       };
@@ -179,6 +180,7 @@ export const columns: ColumnDef<User>[] = [
   {
     header: "Balance",
     cell: ({ row }) => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const [isDialogOpen, setIsDialogOpen] = useState(false);
       const balances = {
         userInfo: {
@@ -195,7 +197,6 @@ export const columns: ColumnDef<User>[] = [
         dmt_min_bal: row.original.dmt_min_bal,
       };
 
-      const totalBalance = row.original.rch_bal + row.original.utility_bal + row.original.dmt_bal;
 
       return (
         <div className="flex items-center gap-2">

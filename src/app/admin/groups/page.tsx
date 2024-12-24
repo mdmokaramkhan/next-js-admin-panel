@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api";
-import { Loader2, ArrowDownIcon, Settings2, Pencil } from "lucide-react"; // Add this import
+import { Loader2, Settings2, Pencil } from "lucide-react"; // Add this import
 import { useReactTable, getCoreRowModel } from "@tanstack/react-table"; // Add this import
 import { Group, CashbackSetting, createCashbackColumns } from "./columns";
 import {

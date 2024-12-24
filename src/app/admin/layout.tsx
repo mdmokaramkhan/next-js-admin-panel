@@ -1,7 +1,7 @@
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { cookies } from 'next/headers';
 import Header from "@/components/header";
+import { Separator } from "@radix-ui/react-separator";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   // const cookieStore = cookies();
@@ -11,6 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset>
         <Header />
+        <Separator orientation="horizontal" className="h-px bg-gray-200" />
         {children}
       </SidebarInset>
     </SidebarProvider>

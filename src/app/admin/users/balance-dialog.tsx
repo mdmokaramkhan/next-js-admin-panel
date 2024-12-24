@@ -7,7 +7,7 @@ import {
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Wallet, User, Phone, Store, Send } from "lucide-react";
+import { User, Phone, Store, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface UserInfo {

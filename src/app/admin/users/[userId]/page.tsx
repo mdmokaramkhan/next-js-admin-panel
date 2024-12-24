@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import TransferMoneyDialog from "../components/send-money-modal";
 import { User } from "../columns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PageProps {
   params: Promise<{ userId: string }>;
@@ -29,7 +30,7 @@ function formatDate(dateString: string | null | undefined) {
   if (!dateString) return 'N/A';
   try {
     return format(new Date(dateString), 'PPP');
-  } catch (error) {
+  } catch {
     return 'Invalid date';
   }
 }
@@ -46,6 +47,11 @@ export default function UserDetailsPage({ params }: PageProps) {
     receiptMobileNumber: "",
     targetWallet: "",
   });
+  const [activeTab, setActiveTab] = useState("transactions");
+  const [, setTransactions] = useState([]);
+  const [, setTransfers] = useState([]);
+  const [, setLoginLogs] = useState([]);
+  const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -133,7 +139,7 @@ export default function UserDetailsPage({ params }: PageProps) {
       } else {
         toast.error("Transfer failed");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error processing transfer");
     }
   };
@@ -146,12 +152,47 @@ export default function UserDetailsPage({ params }: PageProps) {
         if (response.success) {
           setUsers(response.data);
         }
-      } catch (error) {
+      } catch {
         toast.error("Error fetching users");
       }
     };
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    const fetchTabData = async () => {
+      if (!userData?.id) return;
+      setTabLoading(true);
+      try {
+        const endpoint = activeTab === "transactions" 
+          ? `transactions?userId=${userData.id}`
+          : activeTab === "transfers"
+          ? `transfers?userId=${userData.id}`
+          : `login-logs?userId=${userData.id}`;
+        
+        const response = await apiRequest(endpoint, "GET");
+        if (response.success) {
+          switch (activeTab) {
+            case "transactions":
+              setTransactions(response.data);
+              break;
+            case "transfers":
+              setTransfers(response.data);
+              break;
+            case "login-logs":
+              setLoginLogs(response.data);
+              break;
+          }
+        }
+      } catch {
+        toast.error(`Error fetching ${activeTab}`);
+      } finally {
+        setTabLoading(false);
+      }
+    };
+
+    fetchTabData();
+  }, [activeTab, userData?.id]);
 
   // Fix 4: Better loading state
   if (loading) {
@@ -192,7 +233,7 @@ export default function UserDetailsPage({ params }: PageProps) {
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <Heading title="User Details" description="View user information" />
+            <Heading title="User Details" description="" />
           </div>
           <div className="flex items-center gap-4">
             <Button
@@ -377,6 +418,74 @@ export default function UserDetailsPage({ params }: PageProps) {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Add this before the final closing div of PageContainer */}
+      <div className="mt-6">
+        <Tabs defaultValue="transactions" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="transfers">Transfers</TabsTrigger>
+            <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="transactions" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Transactions History</CardTitle>
+                <CardDescription>View all transactions made by this user</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+                  </div>
+                ) : (
+                  // <DataTable columns={transactionColumns} data={transactions} />
+                  <h1>Transactions</h1>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="transfers" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Transfer History</CardTitle>
+                <CardDescription>View all transfers made by this user</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+                  </div>
+                ) : (
+                  // <DataTable columns={transferColumns} data={transfers} />
+                  <h1>Transfers</h1>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="login-logs" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Login History</CardTitle>
+                <CardDescription>View user's login activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary rounded-full border-t-transparent"></div>
+                  </div>
+                ) : (
+                  // <DataTable columns={loginColumns} data={loginLogs} />
+                  <h1>Login infos</h1>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Add TransferMoneyDialog component */}

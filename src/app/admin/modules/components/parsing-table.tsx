@@ -20,7 +20,7 @@ interface ParsingTableProps {
   onDelete: (parsing: any) => void;
 }
 
-export function ParsingTable({ moduleId, data, onStatusChange, onEdit, onDelete }: ParsingTableProps) {
+export function ParsingTable({ data, onStatusChange, onEdit, onDelete }: ParsingTableProps) {
   const [localStatuses, setLocalStatuses] = useState<Record<string, boolean>>({});
 
   const handleStatusChange = async (id: string, newStatus: boolean) => {

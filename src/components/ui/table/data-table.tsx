@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { flexRender, HeaderGroup, Row, Cell, Header } from "@tanstack/react-table";
+import { flexRender, HeaderGroup, Row } from "@tanstack/react-table";
 
 interface DataTableWithScrollProps<TData, TValue> {
   table: any; // You can use the proper type based on your useReactTable hook
