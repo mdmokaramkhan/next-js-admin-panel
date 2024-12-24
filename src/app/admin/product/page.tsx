@@ -5,7 +5,7 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { PlusCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ export default function Product() {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null); // Track the product being edited
   const router = useRouter();
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await apiRequest("providers", "GET", null, router);
       if (response.success) {
@@ -37,7 +37,7 @@ export default function Product() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleAddProduct = (newProduct: Product) => {
     console.log(newProduct);
@@ -52,7 +52,7 @@ export default function Product() {
 
   useEffect(() => {
     fetchProducts();
-  });
+  }, [fetchProducts]);
 
   return (
     <PageContainer scrollable>

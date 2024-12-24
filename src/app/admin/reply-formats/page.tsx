@@ -6,7 +6,7 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { PlusCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MessageTemplate, messageTemplateColumns } from "./columns";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ export default function ReplyFormats() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
-  const fetchReplyFormats = async () => {
+  const fetchReplyFormats = useCallback(async () => {
     try {
       const response = await apiRequest(
         "message-templates",
@@ -39,11 +39,12 @@ export default function ReplyFormats() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchReplyFormats();
-  },);
+  }, [fetchReplyFormats]);
+
   return (
     <PageContainer scrollable>
       <div className="space-y-4">

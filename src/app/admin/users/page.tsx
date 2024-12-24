@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -37,7 +37,7 @@ export default function UsersPage() {
 
   const router = useRouter();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiRequest("users", "GET", null, router);
@@ -53,7 +53,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
