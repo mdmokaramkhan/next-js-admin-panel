@@ -33,7 +33,7 @@ import { usePathname } from "next/navigation";
 export const company = {
   name: "Admin Panel",
   logo: Server,
-  plan: "Enterprise",
+  plan: "Mohammad Mokaram Khan",
 };
 
 export function AppSidebar() {

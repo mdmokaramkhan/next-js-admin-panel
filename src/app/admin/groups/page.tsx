@@ -48,6 +48,8 @@ export default function GroupsCashbackManager() {
     provider_code: "",
     cashback_type: "",
     cashback: 0,
+    min_amount: 0, // Add these fields
+    max_amount: 0,
   });
   const [isGroupsLoading, setIsGroupsLoading] = useState(false);
   const [isCashbackLoading, setIsCashbackLoading] = useState(false);
@@ -55,6 +57,7 @@ export default function GroupsCashbackManager() {
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editingCashback, setEditingCashback] =
     useState<CashbackSetting | null>(null);
+  const [isAddCashbackOpen, setIsAddCashbackOpen] = useState(false);
 
   // Create columns with edit handler
   const columns = createCashbackColumns((cashback) =>
@@ -137,6 +140,8 @@ export default function GroupsCashbackManager() {
       const cashbackData = {
         ...newCashback,
         cashback: parseFloat(newCashback.cashback.toString()), // Ensure number type
+        min_amount: parseFloat(newCashback.min_amount.toString()),
+        max_amount: parseFloat(newCashback.max_amount.toString()),
         group_code: selectedGroup?.group_code ?? "", // Ensure group_code is set
         status: true, // Ensure boolean status
       };
@@ -149,6 +154,8 @@ export default function GroupsCashbackManager() {
         provider_code: "",
         cashback_type: "",
         cashback: 0,
+        min_amount: 0,
+        max_amount: 0,
       });
     } catch (error) {
       console.error("Error creating cashback setting:", error);
@@ -175,6 +182,8 @@ export default function GroupsCashbackManager() {
         provider_code: editingCashback.provider_code,
         cashback_type: editingCashback.cashback_type,
         cashback: parseFloat(editingCashback.cashback.toString()),
+        min_amount: parseFloat(editingCashback.min_amount?.toString() || "0"),
+        max_amount: parseFloat(editingCashback.max_amount?.toString() || "0"),
         status: editingCashback.status,
       };
 
@@ -190,7 +199,10 @@ export default function GroupsCashbackManager() {
     return (
       newCashback.provider_code.trim() !== "" &&
       newCashback.cashback_type !== "" &&
-      newCashback.cashback > 0
+      newCashback.cashback > 0 &&
+      newCashback.min_amount >= 0 && // Add validation
+      newCashback.max_amount >= 0 &&
+      (!newCashback.max_amount || newCashback.max_amount >= newCashback.min_amount)
     );
   };
 
@@ -351,62 +363,12 @@ export default function GroupsCashbackManager() {
                         Managing {selectedGroup.group_name}
                       </p>
                     </div>
-                    <span className="text-sm font-medium rounded-md bg-secondary px-2.5 py-1.5">
-                      {selectedGroup.group_code}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-6 border-b bg-card">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      placeholder="Provider Code"
-                      value={newCashback.provider_code}
-                      onChange={(e) =>
-                        setNewCashback({
-                          ...newCashback,
-                          provider_code: e.target.value,
-                          group_code: selectedGroup.group_code,
-                        })
-                      }
-                    />
-                    <Select
-                      value={newCashback.cashback_type}
-                      onValueChange={(value) =>
-                        setNewCashback({
-                          ...newCashback,
-                          cashback_type: value,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cashbackTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Amount"
-                        value={newCashback.cashback}
-                        onChange={(e) =>
-                          setNewCashback({
-                            ...newCashback,
-                            cashback: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                      />
-                      <Button
-                        onClick={handleCreateCashback}
-                        disabled={!isValidCashback()}
-                      >
-                        Add
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm font-medium rounded-md bg-secondary px-2.5 py-1.5">
+                        {selectedGroup.group_code}
+                      </span>
+                      <Button onClick={() => setIsAddCashbackOpen(true)}>
+                        Add Cashback
                       </Button>
                     </div>
                   </div>
@@ -448,6 +410,92 @@ export default function GroupsCashbackManager() {
             )}
           </div>
         </div>
+
+        {/* Add Cashback Dialog */}
+        <Dialog open={isAddCashbackOpen} onOpenChange={setIsAddCashbackOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Cashback Setting</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input
+                placeholder="Provider Code"
+                value={newCashback.provider_code}
+                onChange={(e) =>
+                  setNewCashback({
+                    ...newCashback,
+                    provider_code: e.target.value,
+                    group_code: selectedGroup?.group_code ?? "",
+                  })
+                }
+              />
+              <Select
+                value={newCashback.cashback_type}
+                onValueChange={(value) =>
+                  setNewCashback({
+                    ...newCashback,
+                    cashback_type: value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cashbackTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Cashback Amount"
+                value={newCashback.cashback}
+                onChange={(e) =>
+                  setNewCashback({
+                    ...newCashback,
+                    cashback: parseFloat(e.target.value) || 0,
+                  })
+                }
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Min Amount"
+                  value={newCashback.min_amount}
+                  onChange={(e) =>
+                    setNewCashback({
+                      ...newCashback,
+                      min_amount: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <Input
+                  placeholder="Max Amount"
+                  value={newCashback.max_amount}
+                  onChange={(e) =>
+                    setNewCashback({
+                      ...newCashback,
+                      max_amount: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={() => {
+                handleCreateCashback();
+                setIsAddCashbackOpen(false);
+              }} 
+              disabled={!isValidCashback()}
+            >
+              Add Cashback
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Group Dialog */}
         <Dialog
@@ -542,7 +590,6 @@ export default function GroupsCashbackManager() {
                 </SelectContent>
               </Select>
               <Input
-                type="number"
                 placeholder="Amount"
                 value={editingCashback?.cashback ?? 0}
                 onChange={(e) =>
@@ -552,7 +599,34 @@ export default function GroupsCashbackManager() {
                       : null
                   )
                 }
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Min Amount"
+                  value={editingCashback?.min_amount ?? 0}
+                  onChange={(e) =>
+                    setEditingCashback((prev) =>
+                      prev
+                        ? { ...prev, min_amount: parseFloat(e.target.value) || 0 }
+                        : null
+                    )
+                  }
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <Input
+                  placeholder="Max Amount"
+                  value={editingCashback?.max_amount ?? 0}
+                  onChange={(e) =>
+                    setEditingCashback((prev) =>
+                      prev
+                        ? { ...prev, max_amount: parseFloat(e.target.value) || 0 }
+                        : null
+                    )
+                  }
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
             </div>
             <Button onClick={handleEditCashback}>Save Changes</Button>
           </DialogContent>
