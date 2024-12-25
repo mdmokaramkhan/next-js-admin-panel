@@ -4,7 +4,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { flexRender, HeaderGroup, Row } from "@tanstack/react-table";
 
 interface DataTableWithScrollProps<TData, TValue> {
-  table: any; // You can use the proper type based on your useReactTable hook
+  table: any;
   columns: any[];
 }
 

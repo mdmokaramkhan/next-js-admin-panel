@@ -37,7 +37,7 @@ export default function AddMoneyModal() {
   const handleRequestBalance = async () => {
     setLoading(true);
     try {
-      const data = await apiRequest("requestAdminBalance", "POST", {
+      const data = await apiRequest("/transfers/request-admin", "POST", {
         amount: parseFloat(amount),
         targetWallet: wallet,
       });
@@ -60,7 +60,7 @@ export default function AddMoneyModal() {
   const handleVerifyAndAddBalance = async () => {
     setLoading(true);
     try {
-      await apiRequest("addAdminBalance", "POST", {
+      await apiRequest("/transfers/admin-balance", "POST", {
         userOTP: parseInt(otp, 10),
         token: tempToken,
       });
