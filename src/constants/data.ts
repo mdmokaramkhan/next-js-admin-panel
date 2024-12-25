@@ -49,20 +49,26 @@ export const navItems: NavItem[] = [
     items: [], // No child items
   },
   {
-    title: "Account",
+    title: "Reports",
     url: "#", // Placeholder as there is no direct link for the parent
     icon: "billing",
     isActive: true,
 
     items: [
       {
-        title: "Profile",
-        url: "/admin/profile",
+        title: "Transactions",
+        url: "/admin/transactions",
         icon: "userPen",
         shortcut: ["m", "m"],
       },
       {
-        title: "Login",
+        title: "Transfers",
+        shortcut: ["l", "l"],
+        url: "/admin/transfers",
+        icon: "login",
+      },
+      {
+        title: "Add Requests",
         shortcut: ["l", "l"],
         url: "/",
         icon: "login",
