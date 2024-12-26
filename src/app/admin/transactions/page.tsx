@@ -14,12 +14,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
+import io from "socket.io-client";
 
 export default function TransactionPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  // const router = useRouter();
-  // Modify date range state to use current date for both from and to
   const [date, setDate] = useState<{
     from: Date | undefined;
     to: Date | undefined;
@@ -53,6 +52,45 @@ export default function TransactionPage() {
       setLoading(false);
     }
   }, [date.from, date.to]);
+
+  useEffect(() => {
+    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL);
+
+    socket.on("transaction:create", (newTransaction) => {
+      // Only add if within date range
+      if (date.from && date.to) {
+        const transactionDate = new Date(newTransaction.createdAt);
+        if (transactionDate >= date.from && transactionDate <= date.to) {
+          setTransactions((prev) => [newTransaction, ...prev]);
+        }
+      }
+    });
+
+    socket.on("transaction:update", (updatedTransaction) => {
+      setTransactions((prev) => {
+        const existingTransactionIndex = prev.findIndex(
+          (transaction) => transaction.id === updatedTransaction.id
+        );
+
+        if (existingTransactionIndex !== -1) {
+          const newTransactions = [...prev];
+          newTransactions[existingTransactionIndex] = updatedTransaction;
+          return newTransactions;
+        }
+        return prev;
+      });
+    });
+
+    // Fetch initial data when dates are set
+    if (date.from && date.to) {
+      setLoading(true);
+      fetchTransactions();
+    }
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [fetchTransactions, date.from, date.to]);
 
   useEffect(() => {
     // Only fetch if both dates are selected
