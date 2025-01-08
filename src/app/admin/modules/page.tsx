@@ -111,6 +111,8 @@ export default function Overview() {
         }
       } else {
         // Create new module
+        // Remove id from data to avoid conflicts
+        delete data.id;
         response = await apiRequest("modules", "POST", data);
         if (response.success) {
           // Refresh the modules list
@@ -173,6 +175,8 @@ export default function Overview() {
 
   const handleCreateParsing = async (data: Partial<Parsing>) => {
     try {
+      // delete id from data to avoid conflicts
+      delete data.id;
       // Include the module ID in the data
       const parsingData = {
         ...data,

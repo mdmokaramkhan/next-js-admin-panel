@@ -76,6 +76,20 @@ export const navItems: NavItem[] = [
     ],
   },
   {
+    title: "Settings",
+    url: "#", // Placeholder as there is no direct link for the parent
+    icon: "settings",
+    isActive: true,
+    items: [
+      {
+        title: "Responses",
+        shortcut: ["l", "l"],
+        url: "/admin/response-groups",
+        icon: "login",
+      },
+    ],
+  },
+  {
     title: "Kanban",
     url: "/admin/kanban",
     icon: "kanban",
