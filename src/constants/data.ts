@@ -87,6 +87,12 @@ export const navItems: NavItem[] = [
         url: "/admin/response-groups",
         icon: "login",
       },
+      {
+        title: "Banners Settings",
+        shortcut: ["l", "l"],
+        url: "/admin/banners",
+        icon: "login",
+      },
     ],
   },
   {
