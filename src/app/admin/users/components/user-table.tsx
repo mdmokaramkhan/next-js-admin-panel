@@ -32,14 +32,16 @@ export function UserTable<TData extends User, TValue>({
   const [rowSelection, setRowSelection] = useState({});
   const [roleFilter, setroleFilter] = useState<string>("");
   const [searchFilter, setSearchFilter] = useState<string>("");
+  const [parentFilter, setParentFilter] = useState<string>("");
 
   // Reset filters
   const resetFilters = () => {
     setroleFilter("");
     setSearchFilter("");
+    setParentFilter("");
   };
 
-  const isAnyFilterActive = roleFilter || searchFilter;
+  const isAnyFilterActive = roleFilter || searchFilter || parentFilter;
 
   const table = useReactTable({
     data: useMemo(() => {
@@ -52,11 +54,15 @@ export function UserTable<TData extends User, TValue>({
           ? row.email_address
               .toLowerCase()
               .includes(searchFilter.toLowerCase()) ||
-            row.owner_name.toLowerCase().includes(searchFilter.toLowerCase())
+            row.owner_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+            row.mobile_number.toString().includes(searchFilter.toLowerCase())
           : true; // Case-insensitive match for searchFilter
-        return roleMatch && searchMatch;
+        const parentMatch = parentFilter
+          ? row.parent_number?.toString() === parentFilter
+          : true;
+        return roleMatch && searchMatch && parentMatch;
       });
-    }, [data, roleFilter, searchFilter]), // Add searchFilter to dependency array
+    }, [data, roleFilter, searchFilter, parentFilter]), // Add searchFilter to dependency array
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -69,6 +75,22 @@ export function UserTable<TData extends User, TValue>({
   const totalItems = data.length;
 
   const filteredDataCount = table.getPrePaginationRowModel().rows.length;
+
+  // Updated uniqueParentNumbers to include shop name
+  const uniqueParentNumbers = useMemo(() => {
+    return Array.from(new Set(data.map(row => row.parent_number)))
+      .filter(Boolean)
+      .map(parentNum => {
+        // Find the user details where mobile_number matches parent_number
+        const parentUser = data.find(user => user.mobile_number === parentNum);
+        return {
+          label: parentUser 
+            ? `${parentUser.shop_name} (${parentNum})` 
+            : `Parent: ${parentNum}`,
+          value: parentNum?.toString() || ''
+        };
+      });
+  }, [data]);
 
   // Function to get selected rows
   // const getSelectedRows = () => {
@@ -85,7 +107,7 @@ export function UserTable<TData extends User, TValue>({
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <Input
           className="w-1/4"
-          placeholder="Search ..."
+          placeholder="Search by name, mobile, or email..."
           onChange={(e) => {
             setSearchFilter(e.target.value || ""); // Update searchFilter state
           }}
@@ -101,6 +123,16 @@ export function UserTable<TData extends User, TValue>({
               return Promise.resolve(new URLSearchParams());
             }}
             filterValue={roleFilter}
+          />
+          <DataTableFilterBox
+            filterKey="parentNumber"
+            title="Parent Number"
+            options={uniqueParentNumbers}
+            setFilterValue={(value) => {
+              setParentFilter(value as string);
+              return Promise.resolve(new URLSearchParams());
+            }}
+            filterValue={parentFilter}
           />
         </div>
         {/* <Button variant="outline" onClick={getSelectedRows}>

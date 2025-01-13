@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
@@ -36,22 +36,47 @@ interface PageProps {
   params: Promise<{ userId: string }>;
 }
 
+// Memoize the IconInput component
+const IconInput = memo(({ 
+  icon: Icon, 
+  ...props 
+}: { 
+  icon: React.ElementType 
+} & React.InputHTMLAttributes<HTMLInputElement>) => (
+  <div className="relative">
+    <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <Input {...props} className="pl-10" />
+  </div>
+));
+IconInput.displayName = 'IconInput';
+
+// Define proper types for form data
+interface FormData {
+  owner_name: string;
+  email_address: string;
+  mobile_number: string;
+  parent_number: string;
+  shop_name: string;
+  address: string;
+  group_code: string;
+  callback_url: string;
+  rch_min_bal: number;
+  utility_min_bal: number;
+  dmt_min_bal: number;
+}
+
 export default function EditUserPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  // Add new state for balances and status
-  const [balanceData, setBalanceData] = useState({
-    rch_bal: "0",
-    utility_bal: "0",
-    dmt_bal: "0",
-  });
-  const [status, setStatus] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  // Initialize with proper typing
+  const [formData, setFormData] = useState<FormData>({
     owner_name: "",
     email_address: "",
     mobile_number: "",
+    parent_number: "",
     shop_name: "",
     address: "",
     group_code: "",
@@ -60,6 +85,14 @@ export default function EditUserPage({ params }: PageProps) {
     utility_min_bal: 0,
     dmt_min_bal: 0,
   });
+
+  // Optimize other state declarations
+  const [balanceData, setBalanceData] = useState({
+    rch_bal: "0",
+    utility_bal: "0",
+    dmt_bal: "0",
+  });
+  const [status, setStatus] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [users, setUsers] = useState<UserType[]>([]);
   const [transferFormData, setTransferFormData] = useState({
@@ -99,6 +132,7 @@ export default function EditUserPage({ params }: PageProps) {
             owner_name: userData.owner_name || "",
             email_address: userData.email_address || "",
             mobile_number: userData.mobile_number?.toString() || "",
+            parent_number: userData.parent_number?.toString() || "", // Add this line
             shop_name: userData.shop_name || "",
             address: userData.address || "",
             group_code: userData.group_code || "",
@@ -154,16 +188,15 @@ export default function EditUserPage({ params }: PageProps) {
     return value;
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
+  // Memoize handlers
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
 
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, group_code: value }));
-  };
+  const handleSelectChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, group_code: value }));
+  }, []);
 
   const handleTransferChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -220,7 +253,7 @@ export default function EditUserPage({ params }: PageProps) {
   };
 
   // Add status toggle handler
-  const handleStatusChange = async (checked: boolean) => {
+  const handleStatusChange = useCallback(async (checked: boolean) => {
     try {
       const response = await apiRequest(
         `users/${resolvedParams.userId}/status`,
@@ -234,9 +267,9 @@ export default function EditUserPage({ params }: PageProps) {
         toast.error("Failed to update status");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error fetching users");
+      toast.error("Error updating status");
     }
-  };
+  }, [resolvedParams.userId]);
 
   // Add send money handler
   const handleSendMoney = () => {
@@ -262,17 +295,6 @@ export default function EditUserPage({ params }: PageProps) {
       toast.error(error instanceof Error ? error.message : "Error fetching users");
     }
   };
-
-  // Add this helper function for input with icon
-  const IconInput = ({ 
-    icon: Icon, 
-    ...props 
-  }: { icon: React.ElementType } & React.InputHTMLAttributes<HTMLInputElement>) => (
-    <div className="relative">
-      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input {...props} className="pl-10" />
-    </div>
-  );
 
   if (loading) {
     return (
@@ -387,7 +409,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="owner_name">Owner Name</Label>
                       <IconInput
                         icon={User}
-                        id="owner_name"
+                        name="owner_name" // Change id to name
                         value={getInputValue(formData.owner_name)}
                         onChange={handleChange}
                         placeholder="John Doe"
@@ -397,7 +419,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="shop_name">Shop Name</Label>
                       <IconInput
                         icon={Store}
-                        id="shop_name"
+                        name="shop_name" // Change id to name
                         value={getInputValue(formData.shop_name)}
                         onChange={handleChange}
                         placeholder="Shop Name"
@@ -409,7 +431,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="email_address">Email</Label>
                       <IconInput
                         icon={Mail}
-                        id="email_address"
+                        name="email_address" // Change id to name
                         value={getInputValue(formData.email_address)}
                         onChange={handleChange}
                         type="email"
@@ -420,7 +442,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="mobile_number">Mobile Number</Label>
                       <IconInput
                         icon={Phone}
-                        id="mobile_number"
+                        name="mobile_number" // Change id to name
                         value={getInputValue(formData.mobile_number)}
                         onChange={handleChange}
                         type="tel"
@@ -432,7 +454,7 @@ export default function EditUserPage({ params }: PageProps) {
                     <Label htmlFor="address">Address</Label>
                     <IconInput
                       icon={MapPin}
-                      id="address"
+                      name="address" // Change id to name
                       value={getInputValue(formData.address)}
                       onChange={handleChange}
                       placeholder="Full Address"
@@ -450,6 +472,17 @@ export default function EditUserPage({ params }: PageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="parent_number">Parent Number</Label>
+                    <IconInput
+                      icon={User}
+                      name="parent_number" // Change id to name
+                      value={getInputValue(formData.parent_number)}
+                      onChange={handleChange}
+                      type="tel"
+                      placeholder="Parent's Mobile Number"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="group_code">Role</Label>
                     <div className="relative">
@@ -475,7 +508,7 @@ export default function EditUserPage({ params }: PageProps) {
                     <Label htmlFor="callback_url">Callback URL</Label>
                     <IconInput
                       icon={Link2}
-                      id="callback_url"
+                      name="callback_url" // Change id to name
                       value={getInputValue(formData.callback_url)}
                       onChange={handleChange}
                       type="url"
@@ -499,7 +532,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="rch_min_bal">Recharge Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        id="rch_min_bal"
+                        name="rch_min_bal" // Change id to name
                         value={getInputValue(formData.rch_min_bal)}
                         onChange={handleChange}
                         type="number"
@@ -510,7 +543,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="utility_min_bal">Utility Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        id="utility_min_bal"
+                        name="utility_min_bal" // Change id to name
                         value={getInputValue(formData.utility_min_bal)}
                         onChange={handleChange}
                         type="number"
@@ -521,7 +554,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="dmt_min_bal">DMT Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        id="dmt_min_bal"
+                        name="dmt_min_bal" // Change id to name
                         value={getInputValue(formData.dmt_min_bal)}
                         onChange={handleChange}
                         type="number"
