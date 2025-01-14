@@ -220,6 +220,7 @@ export default function EditUserPage({ params }: PageProps) {
         id: parseInt(resolvedParams.userId), // Add ID field
         ...formData,
         mobile_number: formData.mobile_number ? parseInt(formData.mobile_number) : undefined, // Convert to number
+        parent_number: formData.parent_number ? parseInt(formData.parent_number) : undefined, // Parse parent_number as integer
         rch_min_bal: parseDecimalValue(formData.rch_min_bal),
         utility_min_bal: parseDecimalValue(formData.utility_min_bal),
         dmt_min_bal: parseDecimalValue(formData.dmt_min_bal),
