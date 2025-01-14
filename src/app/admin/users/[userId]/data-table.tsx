@@ -7,7 +7,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -19,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
 
 interface DataTableProps<TData, TValue> {
@@ -39,7 +37,6 @@ export function DataTable<TData, TValue>({
     data: data ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
@@ -51,7 +48,7 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -89,7 +86,6 @@ export function DataTable<TData, TValue>({
           )}
         </TableBody>
       </Table>
-      <ScrollBar orientation="horizontal" />
     </div>
   );
 }

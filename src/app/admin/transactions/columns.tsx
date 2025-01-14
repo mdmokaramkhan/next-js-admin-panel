@@ -102,8 +102,8 @@ export const getStatusInfo = (status: number) => {
     },
     8: {
       label: "Process Failed",
-      icon: <X size={16} />,
-      variant: "destructive",
+      icon: <Pause size={16} />,
+      variant: "warning",
     },
     9: {
       label: "Waiting Response",
@@ -249,9 +249,9 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "createdAt",
     header: "Date",
     cell: ({ row }) => (
-      <span className="text-nowrap">
+      <div className="" title={format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}>
         {format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}
-      </span>
+      </div>
     ),
   },
   {
@@ -284,7 +284,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => (
       <div className="space-y-1">
         <p className="font-medium text-nowrap">
-          Amount:{" "}
+          Amt:{" "}
           <span className="text-green-600">
             ₹ {parseFloat(row.original.amount.toLocaleString()).toFixed(2)}
           </span>
@@ -303,7 +303,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     header: "User Info",
     cell: ({ row }) => (
       <div>
-        <p className="font-medium text-nowrap">{row.original.shop_name}</p>
+        <p className="font-medium">{row.original.shop_name}</p>
         <p className="text-muted-foreground">+91{row.original.mobile_number}</p>
       </div>
     ),

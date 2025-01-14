@@ -267,7 +267,7 @@ export default function EditUserPage({ params }: PageProps) {
       } else {
         toast.error("Failed to update status");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error updating status");
     }
   }, [resolvedParams.userId]);
@@ -521,19 +521,19 @@ export default function EditUserPage({ params }: PageProps) {
             </Card>
 
             {/* Balance Settings */}
-            <Card>
+            <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>Balance Settings</CardTitle>
                 <CardDescription>Minimum balance configuration</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="rch_min_bal">Recharge Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        name="rch_min_bal" // Change id to name
+                        name="rch_min_bal"
                         value={getInputValue(formData.rch_min_bal)}
                         onChange={handleChange}
                         type="number"
@@ -544,7 +544,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="utility_min_bal">Utility Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        name="utility_min_bal" // Change id to name
+                        name="utility_min_bal"
                         value={getInputValue(formData.utility_min_bal)}
                         onChange={handleChange}
                         type="number"
@@ -555,7 +555,7 @@ export default function EditUserPage({ params }: PageProps) {
                       <Label htmlFor="dmt_min_bal">DMT Min Balance</Label>
                       <IconInput
                         icon={Wallet}
-                        name="dmt_min_bal" // Change id to name
+                        name="dmt_min_bal"
                         value={getInputValue(formData.dmt_min_bal)}
                         onChange={handleChange}
                         type="number"

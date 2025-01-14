@@ -35,6 +35,25 @@ import { transferColumns, Transfer } from "./transfers-columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "./data-table";
 import { transactionColumns, Transaction } from "./transactions-columns";
+import { statementColumns } from "./statements-columns";
+
+// Update Statement interface
+interface Statement {
+  id: number;
+  mobile_number: number;
+  shop_name: string;
+  amount: number;
+  price: string;
+  transaction_id: number | null;
+  transfer_id: number | null;
+  inbox_id: number | null;
+  wallet_type: string;
+  statement_type: number;
+  balance: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface PageProps {
   params: Promise<{ userId: string }>;
@@ -61,19 +80,24 @@ export default function UserDetailsPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState("transactions");
   const [tabLoading, setTabLoading] = useState(false);
 
-  // Modify date range state to use current date for both from and to
+  // Initialize date state as null initially
   const [date, setDate] = useState<{
     from: Date | undefined;
     to: Date | undefined;
   }>({
-    from: new Date(),
-    to: new Date(),
+    from: undefined,
+    to: undefined,
   });
 
   // Add transfers state
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   // Add transactions state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  // Add statements state
+  const [statements, setStatements] = useState<Statement[]>([]);
+
+  // Add a flag to track initial load
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Fetch user data
   useEffect(() => {
@@ -85,6 +109,15 @@ export default function UserDetailsPage({ params }: PageProps) {
         );
         if (response?.success && response.data) {
           setUserData(response.data || []);
+          // Set initial date range only after user data is loaded
+          if (isInitialLoad) {
+            const today = new Date();
+            setDate({
+              from: today,
+              to: today,
+            });
+            setIsInitialLoad(false);
+          }
         } else {
           toast.error("Failed to fetch user data");
           setTimeout(() => router.push("/admin/users"), 1500);
@@ -98,7 +131,7 @@ export default function UserDetailsPage({ params }: PageProps) {
     };
 
     fetchUserData();
-  }, [resolvedParams.userId, router]);
+  }, [resolvedParams.userId, router, isInitialLoad]);
 
   // Fetch users for transfer dialog
   useEffect(() => {
@@ -109,47 +142,54 @@ export default function UserDetailsPage({ params }: PageProps) {
     fetchUsers();
   }, []);
 
-  // Add fetch transfers effect
+  // Modified fetch data effect
   useEffect(() => {
     const fetchData = async () => {
-      if (!date.from || !date.to) return;
+      if (!date.from || !date.to || !userData?.mobile_number) return;
+      
       setTabLoading(true);
       try {
-        let response;
-        if (activeTab === "transfers") {
-          response = await apiRequest(
-            `transfers/date-range?startDate=${format(
-              date.from,
-              "yyyy-MM-dd"
-            )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
-            "GET"
-          );
-          if (response?.success) {
-            setTransfers(response.data);
-          }
-        } else if (activeTab === "transactions") {
-          response = await apiRequest(
-            `transactions/date-range?startDate=${format(
-              date.from,
-              "yyyy-MM-dd"
-            )}&endDate=${format(date.to, "yyyy-MM-dd")}`,
-            "GET"
-          );
-          if (response?.success) {
-            setTransactions(response.data);
+        const dateParams = `startDate=${format(date.from, "yyyy-MM-dd")}&endDate=${format(date.to, "yyyy-MM-dd")}`;
+        
+        let endpoint = "";
+        switch (activeTab) {
+          case "transfers":
+            endpoint = `transfers/date-range?${dateParams}`;
+            break;
+          case "transactions":
+            endpoint = `transactions/date-range?${dateParams}`;
+            break;
+          case "statements":
+            endpoint = `statements/user/date-range?mobile_number=${userData.mobile_number}&${dateParams}`;
+            break;
+          default:
+            return;
+        }
+
+        const response = await apiRequest(endpoint, "GET");
+        
+        if (response?.success) {
+          switch (activeTab) {
+            case "transfers":
+              setTransfers(response.data);
+              break;
+            case "transactions":
+              setTransactions(response.data);
+              break;
+            case "statements":
+              setStatements(response.data);
+              break;
           }
         }
-      } catch {
+      } catch (error) {
         toast.error(`Failed to fetch ${activeTab}`);
       } finally {
         setTabLoading(false);
       }
     };
 
-    if (activeTab === "transfers" || activeTab === "transactions") {
-      fetchData();
-    }
-  }, [date, activeTab]);
+    fetchData();
+  }, [activeTab, userData?.mobile_number, date.from, date.to]);
 
   // Transfer money handlers
   const handleSendMoney = (wallet = "rch_bal") => {
@@ -505,6 +545,7 @@ export default function UserDetailsPage({ params }: PageProps) {
               <TabsList>
                 <TabsTrigger value="transactions">Transactions</TabsTrigger>
                 <TabsTrigger value="transfers">Transfers</TabsTrigger>
+                <TabsTrigger value="statements">Statements</TabsTrigger>
                 <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
               </TabsList>
               {/* Date range picker */}
@@ -584,6 +625,26 @@ export default function UserDetailsPage({ params }: PageProps) {
                       columns={transferColumns}
                       data={transfers}
                       searchKey="end_shop_name"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="statements">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Statements</CardTitle>
+                  <CardDescription>View user's account statements and balance history</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tabLoading ? (
+                    <TabLoadingSkeleton />
+                  ) : (
+                    <DataTable
+                      columns={statementColumns}
+                      data={statements}
+                      searchKey="description"
                     />
                   )}
                 </CardContent>
