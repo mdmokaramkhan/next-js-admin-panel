@@ -1,5 +1,8 @@
 "use client";
 
+// Add import for login info columns
+import { loginInfoColumns, LoginInfo } from "./login-info-columns";
+
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -31,7 +34,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TransferMoneyDialog from "../components/send-money-modal";
 import { User } from "../columns";
-import { transferColumns, Transfer } from "./transfers-columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "./data-table";
 import { transactionColumns, Transaction } from "./transactions-columns";
@@ -89,8 +91,6 @@ export default function UserDetailsPage({ params }: PageProps) {
     to: undefined,
   });
 
-  // Add transfers state
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
   // Add transactions state
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   // Add statements state
@@ -98,6 +98,9 @@ export default function UserDetailsPage({ params }: PageProps) {
 
   // Add a flag to track initial load
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Add login info state
+  const [loginInfo, setLoginInfo] = useState<LoginInfo[]>([]);
 
   // Fetch user data
   useEffect(() => {
@@ -153,14 +156,14 @@ export default function UserDetailsPage({ params }: PageProps) {
         
         let endpoint = "";
         switch (activeTab) {
-          case "transfers":
-            endpoint = `transfers/date-range?${dateParams}`;
-            break;
           case "transactions":
-            endpoint = `transactions/date-range?${dateParams}`;
+            endpoint = `transactions/user?mobile_number=${userData.mobile_number}&${dateParams}`;
             break;
           case "statements":
-            endpoint = `statements/user/date-range?mobile_number=${userData.mobile_number}&${dateParams}`;
+            endpoint = `statements/user?mobile_number=${userData.mobile_number}&${dateParams}`;
+            break;
+          case "login-logs":
+            endpoint = `login-info/user?userId=${userData.id}`;
             break;
           default:
             return;
@@ -170,14 +173,14 @@ export default function UserDetailsPage({ params }: PageProps) {
         
         if (response?.success) {
           switch (activeTab) {
-            case "transfers":
-              setTransfers(response.data);
-              break;
             case "transactions":
               setTransactions(response.data);
               break;
             case "statements":
               setStatements(response.data);
+              break;
+            case "login-logs":
+              setLoginInfo(response.data);
               break;
           }
         }
@@ -544,7 +547,6 @@ export default function UserDetailsPage({ params }: PageProps) {
             <div className="flex items-center justify-between mb-4">
               <TabsList>
                 <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                <TabsTrigger value="transfers">Transfers</TabsTrigger>
                 <TabsTrigger value="statements">Statements</TabsTrigger>
                 <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
               </TabsList>
@@ -609,28 +611,6 @@ export default function UserDetailsPage({ params }: PageProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="transfers">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Transfer History</CardTitle>
-                  <CardDescription>
-                    View all transfers made by this user
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {tabLoading ? (
-                    <TabLoadingSkeleton />
-                  ) : (
-                    <DataTable
-                      columns={transferColumns}
-                      data={transfers}
-                      searchKey="end_shop_name"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="statements">
               <Card>
                 <CardHeader>
@@ -658,7 +638,15 @@ export default function UserDetailsPage({ params }: PageProps) {
                   <CardDescription>View user's login activity</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {tabLoading ? <TabLoadingSkeleton /> : <h1>Login infos</h1>}
+                  {tabLoading ? (
+                    <TabLoadingSkeleton />
+                  ) : (
+                    <DataTable
+                      columns={loginInfoColumns}
+                      data={loginInfo}
+                      searchKey="ip_address"
+                    />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
