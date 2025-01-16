@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
+  flexRender,
 } from "@tanstack/react-table";
 import { useState, useMemo } from "react";
 import { DataTableFilterBox } from "@/components/ui/table/data-table-filter";
@@ -12,7 +13,7 @@ import { User, roleOptions } from "../columns";
 import { Input } from "@/components/ui/input";
 import { DataTableResetFilter } from "@/components/ui/table/data-tble-reset";
 import { DataTablePagination } from "@/components/ui/table/data-table-pagination";
-import { DataTableWithScroll } from "@/components/ui/table/data-table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataTableSkeleton } from "@/components/ui/table/data-table-skeleton";
 
 interface DataTableProps<TData, TValue> {
@@ -147,7 +148,56 @@ export function UserTable<TData extends User, TValue>({
         <DataTableSkeleton columnCount={8} rowCount={10} />
       ) : (
         <div>
-          <DataTableWithScroll table={table} columns={columns} />
+          <div className="border rounded-md">
+            <div className="max-h-[600px] overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-white z-10">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id} className="bg-white">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        No results.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
           <DataTablePagination
             table={table}
             pageSizeOptions={pageSizeOptions}

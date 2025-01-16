@@ -98,22 +98,29 @@ export const columns: ColumnDef<User>[] = [
       return ownerName;
     },
   },
+
   {
-    header: "Email",
-    accessorKey: "email_address",
-    cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
-      const emailAddress = row.getValue("email_address");
-      return emailAddress;
+    header: "Role",
+    cell: ({
+      row,
+    }: {
+      row: { original: { groupDetails: { group_name: string } } };
+    }) => {
+      const groupName = row.original.groupDetails?.group_name;
+      return groupName ?? "Not Set";
     },
   },
   {
-    header: "Phone Number",
-    accessorKey: "mobile_number",
-    cell: ({ row }: { row: { getValue: (key: string) => number } }) => {
-      const mobileNumber = row.getValue("mobile_number");
-      return "+91" + mobileNumber;
+    header: "Balance",
+    cell: ({ row }) => {
+      return (
+        <div className="font-medium">
+          ₹{Number(row.original.rch_bal).toFixed(2)}
+        </div>
+      );
     },
   },
+
   {
     header: "Status",
     accessorKey: "status",
@@ -173,25 +180,44 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    header: "Role",
-    cell: ({
-      row,
-    }: {
-      row: { original: { groupDetails: { group_name: string } } };
-    }) => {
-      const groupName = row.original.groupDetails?.group_name;
-      return groupName ?? "Not Set";
+    header: "Phone Number",
+    accessorKey: "mobile_number",
+    cell: ({ row }: { row: { getValue: (key: string) => number } }) => {
+      const mobileNumber = row.getValue("mobile_number");
+      return "+91" + mobileNumber;
     },
   },
   {
-    header: "Balance",
+    header: "Email",
+    accessorKey: "email_address",
+    cell: ({ row }: { row: { getValue: (key: string) => string } }) => {
+      const emailAddress = row.getValue("email_address");
+      return emailAddress;
+    },
+  },
+  // {
+  //   header: "KYC",
+  //   accessorKey: "isVerified",
+  //   cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => {
+  //     const isVerified = row.getValue("isVerified");
+
+  //     return isVerified ? (
+  //       <CheckCircle className="h-5 w-5 text-green-500" />
+  //     ) : (
+  //       <AlertCircle className="h-5 w-5 text-yellow-500" />
+  //     );
+  //   },
+  // },
+  {
+    id: "actions",
+    header: "Actions",
     cell: ({ row }) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const [isDialogOpen, setIsDialogOpen] = useState(false);
       const balances = {
         userInfo: {
           name: row.original.owner_name,
-          shopName: row.original.shop_name ?? null, // Convert undefined to null
+          shopName: row.original.shop_name ?? null,
           mobile: row.original.mobile_number,
           role: row.original.groupDetails?.group_name || "N/A",
         },
@@ -204,52 +230,47 @@ export const columns: ColumnDef<User>[] = [
       };
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   onClick={() => setIsDialogOpen(true)}
                 >
-                  <Wallet className="h-4 w-4" />
+                  <Wallet className="h-4 w-4 text-blue-500" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent className="p-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Recharge:</span>
-                    <span>₹{row.original.rch_bal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Utility:</span>
-                    <span>₹{row.original.utility_bal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">DMT:</span>
-                    <span>₹{row.original.dmt_bal.toLocaleString()}</span>
-                  </div>
-                </div>
-              </TooltipContent>
+              <TooltipContent>View Balance Details</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              window.dispatchEvent(
-                new CustomEvent("openTransferDialog", {
-                  detail: {
-                    userId: row.original.id,
-                    mobileNumber: row.original.mobile_number,
-                  },
-                })
-              );
-            }}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent("openTransferDialog", {
+                        detail: {
+                          userId: row.original.id,
+                          mobileNumber: row.original.mobile_number,
+                        },
+                      })
+                    );
+                  }}
+                >
+                  <Send className="h-4 w-4 text-green-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send Money</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <CellAction data={row.original} />
           <BalanceDialog
             isOpen={isDialogOpen}
             onClose={() => setIsDialogOpen(false)}
@@ -258,22 +279,5 @@ export const columns: ColumnDef<User>[] = [
         </div>
       );
     },
-  },
-  {
-    header: "KYC",
-    accessorKey: "isVerified",
-    cell: ({ row }: { row: { getValue: (key: string) => boolean } }) => {
-      const isVerified = row.getValue("isVerified");
-
-      return isVerified ? (
-        <CheckCircle className="h-5 w-5 text-green-500" />
-      ) : (
-        <AlertCircle className="h-5 w-5 text-yellow-500" />
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }: { row: any }) => <CellAction data={row.original} />,
   },
 ];

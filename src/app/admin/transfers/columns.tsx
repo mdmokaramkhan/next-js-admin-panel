@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useState } from "react";
 import { TransferDetailsDialog } from "./transfer-details-dialog";
-import { ArrowUpRight, ArrowDownLeft, CreditCard, PlusCircle } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, CreditCard, PlusCircle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export type Transfer = {
@@ -120,6 +120,11 @@ export const transferColumns: ColumnDef<Transfer>[] = [
         <p className="text-sm text-muted-foreground">+91 {row.original.mobile_number}</p>
       </div>
     ),
+  },
+  {
+    id: "arrow",
+    header: "",
+    cell: () => <ArrowRight className="w-4 h-4 text-muted-foreground" />,
   },
   {
     accessorKey: "to_user",
