@@ -1,7 +1,8 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, AlertCircle, Wallet, Send } from "lucide-react";
+import { Wallet, Send } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { CellAction } from "./cell-action";
 import { ColumnDef } from "@tanstack/react-table";
 import { Switch } from "@/components/ui/switch";
@@ -61,6 +62,16 @@ export const roleOptions = [
   { value: "U", label: "Users" },
 ];
 
+// Helper function to get initials
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 // Columns
 export const columns: ColumnDef<User>[] = [
   {
@@ -85,9 +96,20 @@ export const columns: ColumnDef<User>[] = [
   {
     header: "Display Name",
     accessorKey: "shop_name",
-    cell: ({ row }: { row: { getValue: (key: string) => string | null } }) => {
-      const shopName = row.getValue("shop_name");
-      return shopName ?? "N/A";
+    cell: ({ row }) => {
+      const shopName = row.getValue("shop_name") as string;
+      const profilePic = row.original.profile_pic;
+      const ownerName = row.original.owner_name;
+      
+      return (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={profilePic || ''} alt={ownerName} />
+            <AvatarFallback>{getInitials(ownerName)}</AvatarFallback>
+          </Avatar>
+          <span>{shopName ?? "N/A"}</span>
+        </div>
+      );
     },
   },
   {
