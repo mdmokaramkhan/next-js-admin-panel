@@ -82,50 +82,72 @@ export type Transaction = {
   };
 };
 
-// Add status mapping
+// Update status colors with better contrast and organization
 export const getStatusInfo = (status: number) => {
   const statusMap = {
+    // Not Started / Neutral States
     0: {
       label: "Not Process",
       icon: <Pause size={16} />,
       variant: "secondary",
+      color: "bg-gray-100 text-gray-700 border-gray-200"
     },
     5: {
       label: "No Parsing",
       icon: <StopCircle size={16} />,
       variant: "secondary",
+      color: "bg-gray-100 text-gray-700 border-gray-200"
     },
+    // Processing/Pending States
     7: {
       label: "Processing",
-      icon: <Hourglass size={16} />,
-      variant: "warning",
+      icon: <Hourglass size={16} className="animate-spin" />,
+      variant: "secondary",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
     },
     8: {
       label: "Process Failed",
       icon: <Pause size={16} />,
-      variant: "warning",
+      variant: "secondary",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
     },
     9: {
       label: "Waiting Response",
-      icon: <RefreshCw size={16} />,
-      variant: "warning",
+      icon: <RefreshCw size={16} className="animate-spin" />,
+      variant: "secondary",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
     },
-    10: { label: "Successful", icon: <Check size={16} />, variant: "success" },
-    20: { label: "Failed", icon: <X size={16} />, variant: "destructive" },
+    // Success State
+    10: {
+      label: "Successful",
+      icon: <Check size={16} />,
+      variant: "secondary",
+      color: "bg-green-100 text-green-700 border-green-200"
+    },
+    // Error States
+    20: {
+      label: "Failed",
+      icon: <X size={16} />,
+      variant: "secondary",
+      color: "bg-red-100 text-red-700 border-red-200"
+    },
     21: {
       label: "Wrong Number",
       icon: <Ban size={16} />,
-      variant: "destructive",
+      variant: "secondary",
+      color: "bg-red-100 text-red-700 border-red-200"
     },
     22: {
       label: "Invalid Amount",
       icon: <Ban size={16} />,
-      variant: "destructive",
+      variant: "secondary",
+      color: "bg-red-100 text-red-700 border-red-200"
     },
     23: {
       label: "Provider Down",
       icon: <AlertTriangle size={16} />,
-      variant: "destructive",
+      variant: "secondary",
+      color: "bg-red-100 text-red-700 border-red-200"
     },
   } as const;
 
@@ -134,6 +156,7 @@ export const getStatusInfo = (status: number) => {
       label: "Unknown",
       icon: null,
       variant: "secondary",
+      color: "bg-gray-100 text-gray-700 border-gray-200"
     }
   );
 };
@@ -299,6 +322,22 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     ),
   },
   {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      const statusInfo = getStatusInfo(status);
+      return (
+        <Badge 
+          variant="secondary"
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border ${statusInfo.color}`}
+        >
+          {statusInfo.icon} {statusInfo.label}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "user_info",
     header: "User Info",
     cell: ({ row }) => (
@@ -325,30 +364,6 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       </div>
     ),
   },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.original.status;
-      const statusInfo = getStatusInfo(status);
-      return (
-        <div className="flex items-center gap-2 text-nowrap">
-          <Badge variant={statusInfo.variant as any}>
-            {statusInfo.icon} {statusInfo.label}
-          </Badge>
-        </div>
-      );
-    },
-  },
-  // {
-  //   accessorKey: "response",
-  //   header: "Response",
-  //   cell: ({ row }) => (
-  //     <span className="truncate max-w-[200px] block">
-  //       {row.original.response || "N/A"}
-  //     </span>
-  //   ),
-  // },
   {
     id: "actions",
     cell: ({ row }) => {

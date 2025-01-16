@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, BarChart3, RefreshCcw, Search, PhoneCall, Store, User } from "lucide-react";
+import { CalendarIcon, BarChart3, RefreshCcw } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import StatsDialog from "./components/stats-dialog";
-import { Input } from "@/components/ui/input";
 
 // Update the constants to match the actual status codes
 const STATUS_OPTIONS = [
@@ -77,22 +76,18 @@ export default function TransactionPage() {
     }
   }, [date.from, date.to]); // Only depend on dates
 
-  // New effect for filtering with correct type checking
+  // Update the filtered transactions when raw transactions or status filter changes
   useEffect(() => {
-    const filterTransactions = () => {
-      let filtered = [...rawTransactions];
+    if (selectedStatus === "all") {
+      setFilteredTransactions(rawTransactions);
+      return;
+    }
 
-      if (selectedStatus !== "all") {
-        const statusCodes = selectedStatus.split(",").map(Number);
-        filtered = filtered.filter(transaction => 
-          statusCodes.includes(transaction.status)
-        );
-      }
-
-      setFilteredTransactions(filtered);
-    };
-
-    filterTransactions();
+    const statusCodes = selectedStatus.split(",").map(Number);
+    const filtered = rawTransactions.filter(transaction => 
+      statusCodes.includes(transaction.status)
+    );
+    setFilteredTransactions(filtered);
   }, [rawTransactions, selectedStatus]);
 
   useEffect(() => {
@@ -219,10 +214,15 @@ export default function TransactionPage() {
         <Separator />
         <DataTable
           columns={transactionColumns}
-          data={filteredTransactions}
+          data={filteredTransactions} // Use filteredTransactions instead of rawTransactions
           pageSizeOptions={[10, 20, 50]}
           loading={loading && !refreshing} // Only show loading state for initial load
-          onFilter={setFilteredTransactions}
+          onFilter={(filtered) => {
+            // Only update filtered transactions if they're different
+            if (JSON.stringify(filtered) !== JSON.stringify(filteredTransactions)) {
+              setFilteredTransactions(filtered as Transaction[]);
+            }
+          }}
         />
         
         {/* Stats Dialog */}
