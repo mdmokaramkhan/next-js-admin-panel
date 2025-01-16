@@ -96,8 +96,8 @@ export const navItems: NavItem[] = [
     ],
   },
   {
-    title: "Kanban",
-    url: "/admin/kanban",
+    title: "System Logs",
+    url: "/admin/logs",
     icon: "kanban",
     shortcut: ["k", "k"],
     isActive: false,

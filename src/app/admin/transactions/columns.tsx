@@ -286,7 +286,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
         <p className="font-medium text-nowrap">
           Amt:{" "}
           <span className="text-green-600">
-            ₹ {parseFloat(row.original.amount.toLocaleString()).toFixed(2)}
+            ₹ {row.original.amount}.00
           </span>
         </p>
         <p className="font-normal text-muted-foreground">
