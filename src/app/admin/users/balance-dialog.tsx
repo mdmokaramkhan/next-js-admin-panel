@@ -33,6 +33,13 @@ interface BalanceDialogProps {
   balances: BalanceInfo;
 }
 
+const formatIndianCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2
+  }).format(amount);
+};
+
 const BalanceDialog: React.FC<BalanceDialogProps> = ({
   isOpen,
   onClose,
@@ -86,11 +93,11 @@ const BalanceDialog: React.FC<BalanceDialogProps> = ({
               <div className="space-y-2">
                 <h3 className="font-semibold text-base mb-4">Recharge</h3>
                 <div className="text-2xl font-bold tracking-tight">
-                  ₹{balances.rch_bal.toLocaleString()}
+                  ₹{formatIndianCurrency(balances.rch_bal)}
                 </div>
                 <Separator className="my-2" />
                 <div className="text-sm font-medium text-muted-foreground">
-                  Locked: ₹{balances.rch_min_bal.toLocaleString()}
+                  Locked: ₹{formatIndianCurrency(balances.rch_min_bal)}
                 </div>
               </div>
             </CardContent>
@@ -113,11 +120,11 @@ const BalanceDialog: React.FC<BalanceDialogProps> = ({
               <div className="space-y-2">
                 <h3 className="font-semibold text-base mb-4">Utility</h3>
                 <div className="text-2xl font-bold tracking-tight">
-                  ₹{balances.utility_bal.toLocaleString()}
+                  ₹{formatIndianCurrency(balances.utility_bal)}
                 </div>
                 <Separator className="my-2" />
                 <div className="text-sm font-medium text-muted-foreground">
-                  Locked: ₹{balances.utility_min_bal.toLocaleString()}
+                  Locked: ₹{formatIndianCurrency(balances.utility_min_bal)}
                 </div>
               </div>
             </CardContent>
@@ -140,11 +147,11 @@ const BalanceDialog: React.FC<BalanceDialogProps> = ({
               <div className="space-y-2">
                 <h3 className="font-semibold text-base mb-4">DMT</h3>
                 <div className="text-2xl font-bold tracking-tight">
-                  ₹{balances.dmt_bal.toLocaleString()}
+                  ₹{formatIndianCurrency(balances.dmt_bal)}
                 </div>
                 <Separator className="my-2" />
                 <div className="text-sm font-medium text-muted-foreground">
-                  Locked: ₹{balances.dmt_min_bal.toLocaleString()}
+                  Locked: ₹{formatIndianCurrency(balances.dmt_min_bal)}
                 </div>
               </div>
             </CardContent>

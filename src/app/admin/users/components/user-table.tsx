@@ -151,11 +151,11 @@ export function UserTable<TData extends User, TValue>({
           <div className="border rounded-md">
             <div className="max-h-[600px] overflow-auto">
               <Table>
-                <TableHeader className="sticky top-0 bg-white z-10">
+                <TableHeader className="sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} className="bg-white">
+                        <TableHead key={header.id} >
                           {header.isPlaceholder
                             ? null
                             : flexRender(

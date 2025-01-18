@@ -364,7 +364,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
           </span>
         </p>
         <p className="text-xs text-nowrap text-muted-foreground">
-          Lapu Balance:{" "}
+          Lapu Bal:{" "}
           {row.original.moduleDetails 
             ? (row.original.lapu_bal != null 
                 ? Number(row.original.lapu_bal).toFixed(2)
