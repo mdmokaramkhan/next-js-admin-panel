@@ -17,24 +17,44 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-const API_URL = "https://spdpay.in/application-content/banners/banners.php";
+const BANNER_API_URL = "https://spdpay.in/application-content/banners/banners.php";
+const CARD_API_URL = "https://spdpay.in/application-content/cards/cards.php";
+const ICON_UPLOAD_URL = "https://spdpay.in/application-content/uploads.php";
 
 interface Banner {
   name: string;
   status: 'active' | 'inactive';
 }
 
+interface Card {
+  id: string;
+  icon: string;
+  title: string;
+  description: string;
+  long_description: string;
+  action_path: string;
+  type: 'home' | 'mobile';
+}
+
 export default function BannersPage() {
+  // Existing banner states
   const [images, setImages] = useState<Banner[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // New card states
+  const [cards, setCards] = useState<Card[]>([]);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
+  const [cardIcon, setCardIcon] = useState<File | null>(null);
+  const [cardIconPreview, setCardIconPreview] = useState<string | null>(null);
+
   const fetchImages = async () => {
     const loadingToast = toast.loading("Fetching banners...");
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(BANNER_API_URL);
       const data = await response.json();
       if (data.status === 'success') {
         setImages(data.images);
@@ -72,7 +92,7 @@ export default function BannersPage() {
     formData.append('image', fileInputRef.current.files[0]);
 
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(BANNER_API_URL, {
         method: 'POST',
         body: formData,
       });
@@ -103,7 +123,7 @@ export default function BannersPage() {
       const formData = new URLSearchParams();
       formData.append('filename', filename);
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(BANNER_API_URL, {
         method: 'DELETE',
         body: formData.toString(), // Send as URL-encoded form data
         headers: {
@@ -134,7 +154,7 @@ export default function BannersPage() {
       formData.append('filename', banner.name);
       formData.append('status', banner.status === 'active' ? 'inactive' : 'active');
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(BANNER_API_URL, {
         method: 'PATCH',
         body: formData.toString(),
         headers: {
@@ -158,8 +178,101 @@ export default function BannersPage() {
     }
   };
 
+  const fetchCards = async () => {
+    const loadingToast = toast.loading("Fetching cards...");
+    try {
+      const response = await fetch(CARD_API_URL);
+      const data = await response.json();
+      if (data.success) {
+        setCards(data.cards);
+        toast.success("Cards fetched successfully", { id: loadingToast });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch {
+      toast.error("Failed to fetch cards", { id: loadingToast });
+    }
+  };
+
+  const handleCardIconUpload = async () => {
+    if (!cardIcon) return null;
+    
+    const formData = new FormData();
+    formData.append('icon', cardIcon);
+
+    try {
+      const response = await fetch(ICON_UPLOAD_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        return data.path;
+      }
+      throw new Error(data.message);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleCardSubmit = async (formData: FormData) => {
+    const loadingToast = toast.loading(selectedCard ? "Updating card..." : "Creating card...");
+    try {
+      const iconPath = cardIcon ? await handleCardIconUpload() : selectedCard?.icon;
+      if (!iconPath) throw new Error("Icon upload failed");
+
+      const cardData = {
+        icon: iconPath,
+        title: formData.get('title'),
+        description: formData.get('description'),
+        long_description: formData.get('long_description'),
+        action_path: formData.get('action_path'),
+        type: formData.get('type'),
+      };
+
+      const response = await fetch(selectedCard ? `${CARD_API_URL}/${selectedCard.id}` : CARD_API_URL, {
+        method: selectedCard ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cardData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Card ${selectedCard ? 'updated' : 'created'} successfully`, { id: loadingToast });
+        fetchCards();
+        setIsCardDialogOpen(false);
+        setSelectedCard(null);
+        setCardIcon(null);
+        setCardIconPreview(null);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch {
+      toast.error(`Failed to ${selectedCard ? 'update' : 'create'} card`, { id: loadingToast });
+    }
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    const loadingToast = toast.loading("Deleting card...");
+    try {
+      const response = await fetch(`${CARD_API_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Card deleted successfully", { id: loadingToast });
+        fetchCards();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch {
+      toast.error("Failed to delete card", { id: loadingToast });
+    }
+  };
+
   useEffect(() => {
     fetchImages();
+    fetchCards();
   }, []);
 
   return (
@@ -241,13 +354,13 @@ export default function BannersPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="all" className="space-y-4">
+        <Tabs defaultValue="banners" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="all">All Banners</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="banners">Banners</TabsTrigger>
+            <TabsTrigger value="cards">Cards</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="space-y-4">
+          <TabsContent value="banners" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {images.map((banner) => (
                 <Card key={banner.name} className="group overflow-hidden">
@@ -304,55 +417,199 @@ export default function BannersPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="active" className="space-y-4">
+          <TabsContent value="cards" className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => {
+                setSelectedCard(null);
+                setCardIcon(null);
+                setCardIconPreview(null);
+                setIsCardDialogOpen(true);
+              }}>
+                Add Card
+              </Button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {images.filter(banner => banner.status === 'active').map((banner) => (
-                <Card key={banner.name} className="group overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="relative h-48 w-full">
-                      <Image
-                        src={`https://spdpay.in/application-content/banners/${banner.name}`}
-                        alt={banner.name}
-                        fill
-                        className="object-contain bg-muted/20 p-2"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        priority
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => toggleStatus(banner)}
-                        >
-                          Deactivate
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(banner.name)}
-                        >
-                          Delete
-                        </Button>
+              {cards.map((card) => (
+                <Card key={card.id} className="group overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="relative h-12 w-12">
+                        <Image
+                          src={card.icon}
+                          alt={card.title}
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">{card.title}</h3>
+                        <p className="text-sm text-muted-foreground">{card.type}</p>
                       </div>
                     </div>
-                    <div className="p-3 border-t flex justify-between items-center">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {banner.name}
-                      </p>
-                      <Badge>active</Badge>
+                    <p className="text-sm text-muted-foreground mb-4">{card.description}</p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCard(card);
+                          setIsCardDialogOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteCard(card.id)}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
-              {images.filter(banner => banner.status === 'active').length === 0 && (
-                <div className="col-span-full flex items-center justify-center text-muted-foreground py-10">
-                  No active banners found
-                </div>
-              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>{selectedCard ? 'Edit Card' : 'Add New Card'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleCardSubmit(new FormData(e.currentTarget));
+          }}>
+            <div className="flex gap-8 py-4">
+              {/* Left Column - Icon Upload */}
+              <div className="w-1/3">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="cursor-pointer relative aspect-square border-2 border-dashed rounded-lg flex items-center justify-center"
+                >
+                  {(cardIconPreview || selectedCard?.icon) ? (
+                    <Image
+                      src={cardIconPreview || selectedCard?.icon || ''}
+                      alt="Preview"
+                      fill
+                      className="object-contain p-4"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <Upload className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Click to upload icon
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setCardIcon(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setCardIconPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="hidden"
+                  ref={fileInputRef}
+                />
+              </div>
+
+              {/* Right Column - Form Fields */}
+              <div className="flex-1 grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label htmlFor="title" className="text-sm font-medium">
+                    Title
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    defaultValue={selectedCard?.title}
+                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label htmlFor="description" className="text-sm font-medium">
+                    Description
+                  </label>
+                  <input
+                    id="description"
+                    name="description"
+                    defaultValue={selectedCard?.description}
+                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label htmlFor="long_description" className="text-sm font-medium">
+                    Long Description
+                  </label>
+                  <textarea
+                    id="long_description"
+                    name="long_description"
+                    defaultValue={selectedCard?.long_description}
+                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="action_path" className="text-sm font-medium">
+                    Action Path
+                  </label>
+                  <input
+                    id="action_path"
+                    name="action_path"
+                    defaultValue={selectedCard?.action_path}
+                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="type" className="text-sm font-medium">
+                    Type
+                  </label>
+                  <select
+                    id="type"
+                    name="type"
+                    defaultValue={selectedCard?.type || 'home'}
+                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    required
+                  >
+                    <option value="home">Home</option>
+                    <option value="mobile">Mobile</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" type="button" onClick={() => setIsCardDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {selectedCard ? 'Update' : 'Create'} Card
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
