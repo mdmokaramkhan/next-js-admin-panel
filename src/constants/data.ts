@@ -93,6 +93,12 @@ export const navItems: NavItem[] = [
         url: "/admin/banners",
         icon: "login",
       },
+      {
+        title: "Reply Api Settings",
+        shortcut: ["l", "l"],
+        url: "/admin/sms-apis",
+        icon: "login",
+      },
     ],
   },
   {
