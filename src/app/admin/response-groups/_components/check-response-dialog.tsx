@@ -72,8 +72,11 @@ export function CheckResponseDialog({
         setResult(response.data);
         toast.success("Response checked successfully");
       } else {
-        console.error("API Error Details:", response);
-        toast.error(response.message || "Failed to process response check");
+        if (response.error === "No response data found") {
+          toast.warning("No response data found");
+        } else {
+          toast.error(response.message || "Failed to process response check");
+        }
       }
     } catch (error) {
       console.error("Request Error Details:", error);

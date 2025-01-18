@@ -280,22 +280,28 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "provider_code",
     header: "Provider",
-    cell: ({ row }) => (
-      <div className="grid grid-cols-[auto,1fr] gap-2 items-center">
-        <Avatar>
-          <AvatarImage
-            src={`/images/${row.original.providerDetails?.provider_logo}`}
-            alt={row.original.providerDetails?.provider_logo}
-          />
-          <AvatarFallback>
-            {row.original.providerDetails?.provider_name
-              .substring(0, 2)
-              .toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        {row.original.providerDetails?.provider_name}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const logoPath = row.original.providerDetails?.provider_logo 
+        ? `/images/${row.original.providerDetails.provider_logo}`
+        : null;
+      
+      return (
+        <div className="grid grid-cols-[auto,1fr] gap-2 items-center">
+          <Avatar>
+            <AvatarImage
+              src={logoPath || undefined}
+              alt={row.original.providerDetails?.provider_name || "Provider"}
+            />
+            <AvatarFallback>
+              {row.original.providerDetails?.provider_name
+                ?.substring(0, 2)
+                .toUpperCase() || "PT"}
+            </AvatarFallback>
+          </Avatar>
+          {row.original.providerDetails?.provider_name}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "number",
@@ -359,7 +365,11 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
         </p>
         <p className="text-xs text-nowrap text-muted-foreground">
           Lapu Balance:{" "}
-          {row.original.moduleDetails ? row.original.lapu_bal ?? "N/A" : "N/A"}
+          {row.original.moduleDetails 
+            ? (row.original.lapu_bal != null 
+                ? Number(row.original.lapu_bal).toFixed(2)
+                : "N/A") 
+            : "N/A"}
         </p>
       </div>
     ),
