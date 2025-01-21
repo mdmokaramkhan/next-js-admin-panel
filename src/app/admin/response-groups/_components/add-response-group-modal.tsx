@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
-import { ResponseGroup } from "../columns";
+import { ResponseGroup, getStatusInfo } from "../columns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const RequiredLabel = ({ text }: { text: string }) => (
   <div className="mb-2">
@@ -76,6 +77,23 @@ export function AddResponseGroupSheet({
       });
     }
   }, [groupToEdit]);
+
+  const statusOptions = [
+    // Not Started / Neutral States
+    { value: 0, label: "Not Process" },
+    { value: 5, label: "No Parsing" },
+    // Processing/Pending States
+    { value: 7, label: "Processing" },
+    { value: 8, label: "Process Failed" },
+    { value: 9, label: "Waiting Response" },
+    // Success State
+    { value: 10, label: "Successful" },
+    // Error States
+    { value: 20, label: "Failed" },
+    { value: 21, label: "Wrong Number" },
+    { value: 22, label: "Invalid Amount" },
+    { value: 23, label: "Provider Down" },
+  ];
 
   const handleSubmit = async () => {
     if (!formData.group_name || !formData.txt_required || !formData.status_code) {
@@ -218,13 +236,24 @@ export function AddResponseGroupSheet({
 
           <div>
             <RequiredLabel text="Status Code" />
-            <Input
-              placeholder="Status Code"
-              type="number"
-              value={formData.status_code}
-              onChange={(e) => handleChange("status_code", parseInt(e.target.value))}
-              required
-            />
+            <Select
+              value={String(formData.status_code)}
+              onValueChange={(value) => handleChange("status_code", parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status code" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status.value} value={String(status.value)}>
+                    <div className="flex items-center gap-2">
+                      {getStatusInfo(status.value).icon}
+                      {status.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
