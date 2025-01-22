@@ -2,79 +2,73 @@
 
 import { useEffect, useState } from "react";
 import io from "socket.io-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { columns, type Transaction } from "./columns";
+import { liveTransactionColumns } from "./columns";
 import { DataTable } from "./data-table";
+import type { Transaction } from "./columns";
+import PageContainer from "@/components/page-container";
+import { Card, CardContent } from "@/components/ui/card";
 
-const Transactions = () => {
+const MAX_TRANSACTIONS = 100;
+
+export default function LiveTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL);
+    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL || "");
 
-    socket.on("connect", () => setLoading(false));
-
-    socket.on("transaction:create", (newTransaction) => {
-      setTransactions((prev) => [newTransaction, ...prev]);
-    });
-
-    socket.on("transaction:update", (updatedTransaction) => {
-      setTransactions((prev) => {
-        const existingTransactionIndex = prev.findIndex(
-          (transaction) => transaction.id === updatedTransaction.id
-        );
-
-        if (existingTransactionIndex !== -1) {
-          const newTransactions = [...prev];
-          newTransactions[existingTransactionIndex] = updatedTransaction;
-          return newTransactions;
+    const handleConnect = () => setLoading(false);
+    const handleNewTransaction = (newTransaction: Transaction) => {
+      setTransactions(prev => [newTransaction, ...prev].slice(0, MAX_TRANSACTIONS));
+    };
+    const handleUpdateTransaction = (updatedTransaction: Transaction) => {
+      setTransactions(prev => {
+        const existingIndex = prev.findIndex(t => t.id === updatedTransaction.id);
+        const updated = [...prev];
+        if (existingIndex !== -1) {
+          updated[existingIndex] = updatedTransaction;
         } else {
-          return [updatedTransaction, ...prev];
+          updated.unshift(updatedTransaction);
         }
+        return updated.slice(0, MAX_TRANSACTIONS);
       });
-    });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("transaction:create", handleNewTransaction);
+    socket.on("transaction:update", handleUpdateTransaction);
 
     return () => {
+      socket.off("connect", handleConnect);
+      socket.off("transaction:create", handleNewTransaction);
+      socket.off("transaction:update", handleUpdateTransaction);
       socket.disconnect();
     };
   }, []);
 
-  if (loading) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Live Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Live Transactions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <DataTable
-          columns={columns}
-          data={transactions}
-          pageSizeOptions={[10, 20, 50]}
-          loading={loading}
-        />
-      </CardContent>
-    </Card>
-  );
-};
+    <PageContainer scrollable>
+      <div className="space-y-2 pb-4 h-full">
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight">
+            Live Transactions
+          </h2>
+        </div>
 
-export default Transactions;
+        <div className="space-y-4">
+          <Card className="border-none">
+            <CardContent className="p-6">
+              <DataTable
+                columns={liveTransactionColumns}
+                data={transactions}
+                pageSizeOptions={[10, 20, 30, 50]}
+                loading={loading}
+                autoRefresh={true}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </PageContainer>
+  );
+}

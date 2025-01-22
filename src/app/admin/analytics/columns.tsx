@@ -1,11 +1,14 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { format } from "date-fns";
 
 export interface Transaction {
-  id: string;
+  id: string | number;
+  createdAt?: Date;
   ip_address: string;
   provider_code: string;
   number: string;
@@ -22,32 +25,28 @@ export interface Transaction {
   lapu_bal: number;
   r_offer: string;
   ref_id: string;
+  providerDetails?: {
+    provider_name: string;
+    provider_logo: string;
+  };
+  moduleDetails?: {
+    module_name: string;
+  };
 }
 
-const getStatusBadge = (status: number) => {
-  const statusConfig: Record<number, { label: string; color: string, emoji: string }> = {
-    0: { label: 'Not Process', color: 'bg-slate-400', emoji: '⏸️' },
-    5: { label: 'No Parsing', color: 'bg-slate-500', emoji: '⏹️' },
-    7: { label: 'Processing', color: 'bg-blue-500', emoji: '⏳' },
-    8: { label: 'Process Failed', color: 'bg-red-400', emoji: '❌' },
-    9: { label: 'Waiting Response', color: 'bg-yellow-500', emoji: '🔄' },
-    10: { label: 'Successful', color: 'bg-green-500', emoji: '✅' },
-    20: { label: 'Failed', color: 'bg-red-500', emoji: '❌' },
-    21: { label: 'Wrong Number', color: 'bg-red-500', emoji: '❎' },
-    22: { label: 'Invalid Amount', color: 'bg-red-500', emoji: '🚫' },
-    23: { label: 'Provider Down', color: 'bg-orange-500', emoji: '⚠️' }
+export const getStatusConfig = (status: number) => {
+  const configs = {
+    0: { label: 'Not Process', color: 'bg-gray-100 text-gray-700', emoji: '⏸️' },
+    7: { label: 'Processing', color: 'bg-blue-100 text-blue-700', emoji: '⏳' },
+    9: { label: 'Waiting', color: 'bg-yellow-100 text-yellow-700', emoji: '🔄' },
+    10: { label: 'Success', color: 'bg-green-100 text-green-700', emoji: '✅' },
+    20: { label: 'Failed', color: 'bg-red-100 text-red-700', emoji: '❌' },
+    // ...add other statuses as needed...
   };
-
-  const config = statusConfig[status] || { label: 'Unknown', color: 'bg-gray-500', emoji: '❓' };
-  return (
-    <Badge variant="secondary" className={`${config.color} flex items-center gap-1`}>
-      <span>{config.emoji}</span>
-      <span>{config.label}</span>
-    </Badge>
-  );
+  return configs[status as keyof typeof configs] || { label: 'Unknown', color: 'bg-gray-100', emoji: '❓' };
 };
 
-export const columns: ColumnDef<Transaction>[] = [
+export const liveTransactionColumns: ColumnDef<Transaction>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -64,93 +63,104 @@ export const columns: ColumnDef<Transaction>[] = [
         aria-label="Select row"
       />
     ),
-    enableSorting: false,
-    enableHiding: false,
   },
   {
-    header: "ID",
     accessorKey: "id",
+    header: "ID",
   },
   {
-    header: "IP Address",
-    accessorKey: "ip_address",
+    accessorKey: "createdAt",
+    header: "Date",
+    cell: ({ row }) => (
+      <div title={format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm:ss a")}>
+        {format(new Date(row.original.createdAt!), "hh:mm:ss a")}
+      </div>
+    ),
   },
   {
-    header: "Provider",
     accessorKey: "provider_code",
+    header: "Provider",
+    cell: ({ row }) => {
+      const logoPath = row.original.providerDetails?.provider_logo 
+        ? `/images/${row.original.providerDetails.provider_logo}`
+        : null;
+      
+      return (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={logoPath || undefined} />
+            <AvatarFallback>
+              {row.original.providerDetails?.provider_name?.substring(0, 2).toUpperCase() || "PT"}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium">
+            {row.original.providerDetails?.provider_name}
+          </span>
+        </div>
+      );
+    },
   },
   {
-    header: "Number",
     accessorKey: "number",
+    header: "Number",
+    cell: ({ row }) => (
+      <div className="font-medium">{row.original.number}</div>
+    ),
   },
   {
+    accessorKey: "amount_price",
     header: "Amount",
-    accessorKey: "amount",
-    cell: ({ row }) => new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(row.getValue("amount")),
+    cell: ({ row }) => (
+      <div className="space-y-0.5">
+        <p className="font-medium">
+          ₹ {row.original.amount.toFixed(2)}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Price: ₹ {row.original.price.toFixed(2)}
+        </p>
+      </div>
+    ),
   },
   {
-    header: "Price",
-    accessorKey: "price",
-    cell: ({ row }) => new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(row.getValue("price")),
-  },
-  {
-    header: "Mobile",
-    accessorKey: "mobile_number",
-  },
-  {
-    header: "Shop",
-    accessorKey: "shop_name",
-  },
-  {
-    header: "Module",
-    accessorKey: "module_name",
-    cell: ({ row }) => {
-      const moduleName = row.getValue("module_name");
-      const moduleId = row.original.module_id;
-      return moduleName ? `${moduleName} (${moduleId})` : null;
-    },
-  },
-  {
-    header: "Status",
     accessorKey: "status",
-    cell: ({ row }) => getStatusBadge(row.getValue("status")),
-  },
-  {
-    header: "Response",
-    accessorKey: "response",
-  },
-  {
-    header: "SN",
-    accessorKey: "sn",
-  },
-  {
-    header: "Lapu ID",
-    accessorKey: "lapu_id",
-  },
-  {
-    header: "Lapu Balance",
-    accessorKey: "lapu_bal",
+    header: "Status",
     cell: ({ row }) => {
-      const balance = row.getValue("lapu_bal");
-      return balance ? new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      }).format(balance as number) : '-';
+      const status = row.original.status;
+      const statusInfo = getStatusConfig(status);
+      return (
+        <Badge 
+          variant="secondary"
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium ${statusInfo.color}`}
+        >
+          {statusInfo.emoji} {statusInfo.label}
+        </Badge>
+      );
     },
   },
   {
-    header: "R Offer",
-    accessorKey: "r_offer",
-    cell: ({ row }) => row.getValue("r_offer") || '-',
+    accessorKey: "user_info",
+    header: "User",
+    cell: ({ row }) => (
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium">{row.original.shop_name}</p>
+        <p className="text-xs text-muted-foreground">
+          +91 {row.original.mobile_number}
+        </p>
+      </div>
+    ),
   },
   {
-    header: "Ref ID",
-    accessorKey: "ref_id",
-  },
+    accessorKey: "module_details",
+    header: "Module",
+    cell: ({ row }) => (
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium">
+          {row.original.moduleDetails?.module_name || "N/A"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Bal: ₹ {row.original.lapu_bal?.toFixed(2) || "0.00"}
+        </p>
+      </div>
+    ),
+  }
 ];
