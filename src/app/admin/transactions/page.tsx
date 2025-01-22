@@ -14,26 +14,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, BarChart3, RefreshCcw } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import StatsDialog from "./components/stats-dialog";
-
-// Update the constants to match the actual status codes
-const STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
-  { value: "10", label: "Success" },
-  { value: "0,5,7,8,9", label: "Pending" },
-  { value: "20,21,22,23", label: "Failed" },
-];
 
 export default function TransactionPage() {
   const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState(false);
   const [date, setDate] = useState<{
@@ -43,7 +27,6 @@ export default function TransactionPage() {
     from: new Date(),
     to: new Date(),
   });
-  const [selectedStatus, setSelectedStatus] = useState("all");
   const [isStatsOpen, setIsStatsOpen] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
@@ -75,20 +58,6 @@ export default function TransactionPage() {
       setLoading(false);
     }
   }, [date.from, date.to]); // Only depend on dates
-
-  // Update the filtered transactions when raw transactions or status filter changes
-  useEffect(() => {
-    if (selectedStatus === "all") {
-      setFilteredTransactions(rawTransactions);
-      return;
-    }
-
-    const statusCodes = selectedStatus.split(",").map(Number);
-    const filtered = rawTransactions.filter(transaction => 
-      statusCodes.includes(transaction.status)
-    );
-    setFilteredTransactions(filtered);
-  }, [rawTransactions, selectedStatus]);
 
   useEffect(() => {
     if (date.from && date.to) {
@@ -133,7 +102,6 @@ export default function TransactionPage() {
               description="View and manage all your transactions here."
             />
             <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-              {/* Modify Refresh Button */}
               <Button
                 variant="outline"
                 onClick={handleRefresh}
@@ -144,7 +112,6 @@ export default function TransactionPage() {
                 Refresh
               </Button>
 
-              {/* Stats Button */}
               <Button
                 variant="outline"
                 onClick={() => setIsStatsOpen(true)}
@@ -154,21 +121,6 @@ export default function TransactionPage() {
                 Statistics
               </Button>
 
-              {/* Status Filter */}
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-[180px] min-w-[140px]">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Date Picker */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -214,18 +166,11 @@ export default function TransactionPage() {
         <Separator />
         <DataTable
           columns={transactionColumns}
-          data={filteredTransactions} // Use filteredTransactions instead of rawTransactions
+          data={rawTransactions}
           pageSizeOptions={[10, 20, 50]}
-          loading={loading && !refreshing} // Only show loading state for initial load
-          onFilter={(filtered) => {
-            // Only update filtered transactions if they're different
-            if (JSON.stringify(filtered) !== JSON.stringify(filteredTransactions)) {
-              setFilteredTransactions(filtered as Transaction[]);
-            }
-          }}
+          loading={loading && !refreshing}
         />
         
-        {/* Stats Dialog */}
         <StatsDialog
           open={isStatsOpen}
           onOpenChange={setIsStatsOpen}

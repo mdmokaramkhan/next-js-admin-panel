@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { getStatusInfo } from "./columns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertCircle, IndianRupee, CalendarClock } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 
 interface TransactionDetailsDialogProps {
   transaction: Transaction | null;
