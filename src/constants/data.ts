@@ -68,9 +68,15 @@ export const navItems: NavItem[] = [
         icon: "login",
       },
       {
-        title: "Add Requests",
+        title: "Add Money",
         shortcut: ["l", "l"],
         url: "/",
+        icon: "login",
+      },
+      {
+        title: "Lapu Sales",
+        shortcut: ["l", "l"],
+        url: "/admin/lapu-sales-report",
         icon: "login",
       },
     ],
