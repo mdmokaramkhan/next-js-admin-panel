@@ -1,8 +1,5 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Search, Hash, Box, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -15,6 +12,8 @@ import { LapuSale } from "./columns";
 import { DataTablePagination } from "@/components/ui/table/data-table-pagination";
 import { DataTableSkeleton } from "@/components/ui/table/data-table-skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTableFilterBox } from "@/components/ui/table/data-table-filter";
+import { DataTableResetFilter } from "@/components/ui/table/data-tble-reset";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -29,69 +28,80 @@ export function DataTable<TData extends LapuSale, TValue>({
   pageSizeOptions = [10, 20, 30, 50],
   loading,
 }: DataTableProps<TData, TValue>) {
-  const [searchFilters, setSearchFilters] = useState({
-    identifier: '',
-    module_name: '',
-    provider_code: '', // Changed from provider_codes to provider_code
-  });
-  const [activeFilters, setActiveFilters] = useState({
-    identifier: '',
-    module_name: '',
-    provider_code: '', // Updated to match new field name
-  });
+  const [moduleFilter, setModuleFilter] = useState<string>("");
+  const [identifierFilter, setIdentifierFilter] = useState<string>("");
+  const [providerFilter, setProviderFilter] = useState<string>("");
 
-  const handleSearchChange = (field: keyof typeof searchFilters) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setSearchFilters(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
+  // Get unique modules from data
+  const moduleOptions = useMemo(() => {
+    const modules = new Set(data.map(row => row.module_name));
+    return Array.from(modules)
+      .filter(Boolean)
+      .map(name => ({
+        label: name as string,
+        value: name as string
+      }));
+  }, [data]);
+
+  // Get unique identifiers from data
+  const identifierOptions = useMemo(() => {
+    const identifiers = new Set(data.map(row => row.identifier));
+    return Array.from(identifiers)
+      .filter(Boolean)
+      .map(id => ({
+        label: id,
+        value: id
+      }));
+  }, [data]);
+
+  // Get unique providers from data
+  const providerOptions = useMemo(() => {
+    const providers = new Set(
+      data.flatMap(row => 
+        row.provider_details.map(p => p.provider_name)
+      )
+    );
+    return Array.from(providers)
+      .filter(Boolean)
+      .map(name => ({
+        label: name as string,
+        value: name as string
+      }));
+  }, [data]);
+
+  const resetFilters = () => {
+    setModuleFilter("");
+    setIdentifierFilter("");
+    setProviderFilter("");
   };
 
-  const handleSearch = () => {
-    setActiveFilters({
-      ...searchFilters
-    });
-  };
+  const isAnyFilterActive = moduleFilter || identifierFilter || providerFilter;
 
   const filteredData = useMemo(() => {
-    return data.filter(row => {
-      const sale = row as LapuSale;
-      
-      if (activeFilters.identifier && !sale.identifier.toLowerCase().includes(activeFilters.identifier.toLowerCase())) {
-        return false;
-      }
-      
-      if (activeFilters.module_name && !sale.module_name.toLowerCase().includes(activeFilters.module_name.toLowerCase())) {
-        return false;
-      }
-      
-      // Updated provider code filtering to search through provider_details array
-      if (activeFilters.provider_code) {
-        const hasMatchingProvider = sale.provider_details.some(provider => 
-          provider.provider_code.toLowerCase().includes(activeFilters.provider_code.toLowerCase()) ||
-          provider.provider_name.toLowerCase().includes(activeFilters.provider_code.toLowerCase())
-        );
-        if (!hasMatchingProvider) return false;
-      }
-      
-      return true;
-    });
-  }, [data, activeFilters]);
+    return data.filter((row) => {
+      const moduleMatch = moduleFilter
+        ? moduleFilter.split(".").some(m => 
+            row.module_name.toLowerCase() === m.toLowerCase()
+          )
+        : true;
 
-  const handleReset = () => {
-    setSearchFilters({
-      identifier: '',
-      module_name: '',
-      provider_code: '', // Updated to match new field name
+      const identifierMatch = identifierFilter
+        ? identifierFilter.split(".").some(i => 
+            row.identifier.toLowerCase() === i.toLowerCase()
+          )
+        : true;
+
+      const providerMatch = providerFilter
+        ? providerFilter.split(".").some(p => 
+            row.provider_details.some(provider => 
+              provider.provider_name.toLowerCase() === p.toLowerCase()
+            )
+          )
+        : true;
+
+      return moduleMatch && identifierMatch && providerMatch;
     });
-    setActiveFilters({
-      identifier: '',
-      module_name: '',
-      provider_code: '', // Updated to match new field name
-    });
-  };
+  }, [data, moduleFilter, identifierFilter, providerFilter]);
 
   const table = useReactTable({
     data: filteredData,
@@ -102,58 +112,46 @@ export function DataTable<TData extends LapuSale, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
-          <div className="relative">
-            <Hash className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by identifier..."
-              value={searchFilters.identifier}
-              onChange={handleSearchChange('identifier')}
-              className="pl-8 w-full"
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex gap-4">
+          <DataTableFilterBox
+            filterKey="module"
+            title="Module"
+            options={moduleOptions}
+            setFilterValue={(value) => {
+              setModuleFilter(value as string);
+              return Promise.resolve(new URLSearchParams());
+            }}
+            filterValue={moduleFilter}
+          />
+          
+          <DataTableFilterBox
+            filterKey="identifier"
+            title="Identifier"
+            options={identifierOptions}
+            setFilterValue={(value) => {
+              setIdentifierFilter(value as string);
+              return Promise.resolve(new URLSearchParams());
+            }}
+            filterValue={identifierFilter}
+          />
 
-          <div className="relative">
-            <Box className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by module name..."
-              value={searchFilters.module_name}
-              onChange={handleSearchChange('module_name')}
-              className="pl-8 w-full"
-            />
-          </div>
-
-          <div className="relative">
-            <Tag className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by provider code or name..."
-              value={searchFilters.provider_code}
-              onChange={handleSearchChange('provider_code')}
-              className="pl-8 w-full"
-            />
-          </div>
+          <DataTableFilterBox
+            filterKey="provider"
+            title="Provider"
+            options={providerOptions}
+            setFilterValue={(value) => {
+              setProviderFilter(value as string);
+              return Promise.resolve(new URLSearchParams());
+            }}
+            filterValue={providerFilter}
+          />
         </div>
 
-        <div className="flex items-center gap-2 lg:self-start">
-          <Button 
-            onClick={handleSearch}
-            className="gap-2 w-full lg:w-auto"
-          >
-            <Search className="h-4 w-4" />
-            Search
-          </Button>
-
-          {Object.values(activeFilters).some(Boolean) && (
-            <Button
-              variant="ghost"
-              onClick={handleReset}
-              className="w-full lg:w-auto"
-            >
-              Reset
-            </Button>
-          )}
-        </div>
+        <DataTableResetFilter
+          isFilterActive={isAnyFilterActive}
+          onReset={resetFilters}
+        />
       </div>
 
       {loading ? (
