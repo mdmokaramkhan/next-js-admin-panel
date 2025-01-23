@@ -48,107 +48,42 @@ function ProviderTooltip({ provider }: { provider: ProviderDetail }) {
 
 export const lapuSalesColumns: ColumnDef<LapuSale>[] = [
   {
+    accessorKey: "module_name",
+    header: "Module",
+    cell: ({ row }) => (
+      <div>
+        <span className="text-sm font-medium truncate block">
+          {row.original.module_name}
+        </span>
+      </div>
+    ),
+  },
+  {
     accessorKey: "identifier",
-    header: "Module Information",
+    header: "Identifier",
     cell: ({ row }) => {
       const value = row.original.identifier;
       const isModuleId = value.startsWith('MODULE-');
       
       return (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium min-w-0 truncate">
-            {row.original.module_name}
-          </span>
-          {isModuleId ? (
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 shrink-0">
-              {value}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-base text-gray-700 shrink-0">
-              {value}
-            </Badge>
-          )}
+        <div>
+          <Badge variant={isModuleId ? "secondary" : "outline"} 
+            className={`${isModuleId ? 'bg-blue-50 text-blue-700 hover:bg-blue-50' : 'text-gray-700'} truncate`}>
+            {value}
+          </Badge>
         </div>
-      );
-    },
-  },
-  {
-    accessorKey: "metrics",
-    header: () => (
-      <div className="flex items-center gap-2">
-        <BarChart3 className="h-4 w-4" />
-        <span>Transaction Metrics</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const metrics = [
-        { label: "Total Volume", value: row.original.total_sales, prefix: "₹" },
-        { label: "Transactions", value: row.original.total_transactions }
-      ];
-
-      return (
-        <Card className="p-2 border-dashed">
-          <div className="grid grid-cols-2 gap-2 text-center">
-            {metrics.map((metric, i) => (
-              <div key={i} className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {metric.label}
-                </p>
-                <p className="text-sm font-bold">
-                  {metric.prefix && metric.prefix}
-                  {typeof metric.value === 'number' 
-                    ? metric.value.toLocaleString('en-IN', { 
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2
-                      })
-                    : metric.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      );
-    },
-  },
-  {
-    accessorKey: "balance_flow",
-    header: () => (
-      <div className="flex items-center gap-2">
-        <Wallet className="h-4 w-4" />
-        <span>Balance Flow</span>
-      </div>
-    ),
-    cell: ({ row }) => {
-      const openingBal = row.original.opening_balance;
-      const closingBal = row.original.closing_balance;
-      const balanceChange = ((closingBal - openingBal) / openingBal) * 100;
-      const isPositive = balanceChange >= 0;
-      
-      return (
-        <Card className="p-2 border-dashed">
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Opening</p>
-                <p className="text-sm font-bold">₹{openingBal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Closing</p>
-                <p className="text-sm font-bold">₹{closingBal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-              </div>
-            </div>
-          </div>
-        </Card>
       );
     },
   },
   {
     accessorKey: "provider_details",
     header: "Service Providers",
+    size: 300,
     cell: ({ row }) => {
       const providers = row.original.provider_details;
       const totalProviders = providers.length;
       const providerTypes = [...new Set(providers.map(p => p.provider_type))];
+      const totalTransactions = row.original.total_transactions;
       
       return (
         <div className="flex flex-col space-y-2 w-full">
@@ -183,6 +118,19 @@ export const lapuSalesColumns: ColumnDef<LapuSale>[] = [
                   {type}
                 </Badge>
               ))}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="gap-1 cursor-help">
+                      <BarChart3 className="h-3 w-3" />
+                      <span className="tabular-nums">{totalTransactions.toLocaleString('en-IN')}</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Total Transactions</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -190,30 +138,81 @@ export const lapuSalesColumns: ColumnDef<LapuSale>[] = [
     },
   },
   {
+    accessorKey: "balance_flow",
+    header: () => (
+      <div className="flex items-center gap-2">
+        <Wallet className="h-4 w-4" />
+        <span>Balance Flow</span>
+      </div>
+    ),
+    cell: ({ row }) => {
+      const { opening_balance, closing_balance, total_sales, total_r_offer } = row.original;
+      
+      return (
+        <div className="w-full flex items-center justify-between px-1">
+          {/* Opening Balance - Fixed width */}
+          <div className="flex flex-col w-[120px]">
+            <span className="text-[10px] uppercase text-muted-foreground">Opening</span>
+            <span className="text-sm font-medium tabular-nums">₹{opening_balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+          </div>
+
+          {/* Flow Arrows and Center Content - Reduced gaps */}
+          <div className="flex-1 flex items-center justify-center gap-1.5">
+            <span className="text-gray-300 shrink-0">→</span>
+            
+            {/* Sales Section - Reduced gaps */}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-start shrink-0">
+                <span className="text-[10px] uppercase text-muted-foreground">Sales</span>
+                <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-50 text-sm mt-0.5">
+                  <span className="tabular-nums font-medium">₹{total_sales.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                </Badge>
+              </div>
+              <div className="h-11 w-px bg-gray-200 shrink-0" />
+              <div className="flex flex-col items-start shrink-0">
+                <span className="text-[10px] uppercase text-muted-foreground">R-Offer</span>
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 text-sm mt-0.5">
+                  <span className="tabular-nums font-medium">₹{total_r_offer.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                </Badge>
+              </div>
+            </div>
+            
+            <span className="text-gray-300 shrink-0">→</span>
+          </div>
+
+          {/* Closing Balance - Fixed width */}
+          <div className="flex flex-col w-[120px]">
+            <span className="text-[10px] uppercase text-muted-foreground">Closing</span>
+            <span className="text-sm font-medium tabular-nums">₹{closing_balance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "difference",
-    header: "Net Difference",
+    header: () => "Net Difference",
+    size: 160,
     cell: ({ row }) => {
       const diff = row.original.difference * -1;
       const isPositive = diff >= 0;
       const Icon = isPositive ? TrendingUp : TrendingDown;
       
       return (
-        <Card className={`p-2 border-dashed ${
-          isPositive ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-        }`}>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Icon className={`h-4 w-4 ${
-                isPositive ? 'text-green-600' : 'text-red-600'
-              }`} />
-              <span className={`font-bold ${
-                isPositive ? 'text-green-700' : 'text-red-700'
-              }`}>
-                ₹{Math.abs(diff).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-              </span>
-            </div>
+        <div className="flex items-center justify-end gap-2 min-w-[140px]">
+          <div className={`flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full ${
+            isPositive ? 'bg-green-100' : 'bg-red-100'
+          }`}>
+            <Icon className={`h-5 w-5 ${
+              isPositive ? 'text-green-600' : 'text-red-600'
+            }`} />
           </div>
-        </Card>
+          <span className={`text-base font-semibold tabular-nums ${
+            isPositive ? 'text-green-600' : 'text-red-600'
+          }`}>
+            ₹{Math.abs(diff).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          </span>
+        </div>
       );
     },
   },
