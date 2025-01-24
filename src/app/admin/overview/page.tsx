@@ -73,7 +73,7 @@ export default function Overview() {
               Overview
             </TabsTrigger>
             <TabsTrigger className="rounded-lg" value="analytics">
-              Analytics
+              Live Transactions
             </TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="space-y-4">

@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import io from "socket.io-client";
-import type { Transaction } from "./columns";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import io, { Socket } from "socket.io-client";
+import { DataTable } from "./data-table";
+import { ChevronDown, ChevronRight, RefreshCcw, History } from "lucide-react";
+import { Transaction, transactionColumns } from "./columns";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
+// Types
 interface MessageItem {
   type: 'status' | 'transaction';
   timestamp: string;
@@ -13,154 +24,235 @@ interface MessageItem {
   expanded?: boolean;
 }
 
+// Socket configuration
+const SOCKET_CONFIG = {
+  transports: ['polling'],
+  upgrade: false,
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 2000,
+  timeout: 10000,
+  extraHeaders: {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST",
+  }
+};
+
 export default function LiveTransactions() {
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const addMessage = (type: MessageItem['type'], message: string, data?: any) => {
-    setMessages(prev => [{
-      type,
-      timestamp: new Date().toLocaleTimeString(),
-      message,
-      data
-    }, ...prev]);
+    setMessages(prev => [
+      { type, timestamp: new Date().toLocaleTimeString(), message, data },
+      ...prev.slice(0, 99)
+    ]);
   };
 
-  const toggleExpand = (index: number) => {
+  const toggleExpand = (index: number) => 
     setMessages(prev => prev.map((msg, i) => 
       i === index ? { ...msg, expanded: !msg.expanded } : msg
     ));
-  };
 
   const formatData = (data: any) => {
     if (!data) return null;
     return Object.entries(data).map(([key, value]) => (
       <div key={key} className="flex gap-2 items-start">
         <span className="font-medium min-w-[120px]">{key}:</span>
-        <span className="text-gray-600">{
-          typeof value === 'object' 
-            ? JSON.stringify(value, null, 2) 
-            : String(value)
-        }</span>
+        <span className="text-gray-600">
+          {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+        </span>
       </div>
     ));
   };
 
-  useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL || "", {
-      transports: ['polling'], // Start with polling only
-      upgrade: false, // Disable automatic upgrade to WebSocket
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 2000,
-      timeout: 10000,
-      auth: {
-        // Add any required auth headers
-        token: localStorage.getItem('token') // if you have auth
+  const initializeSocket = useCallback(() => {
+    const newSocket = io(process.env.NEXT_PUBLIC_API_BASE_URL || "", {
+      ...SOCKET_CONFIG,
+      auth: { token: localStorage.getItem('token') }
+    });
+
+    // Socket event handlers
+    const eventHandlers = {
+      reconnect_error: (error: Error) => {
+        addMessage('status', `Reconnection error: ${error.message}`);
+        newSocket.io.opts.transports = ['polling'];
+        newSocket.connect();
       },
-      extraHeaders: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST",
+      error: (error: Error) => {
+        addMessage('status', `Socket error: ${error.message}`);
+        newSocket.connect();
+      },
+      connect: () => {
+        setConnectionStatus('Connected');
+        addMessage('status', 'Socket connected');
+      },
+      connect_error: (error: Error) => {
+        setConnectionStatus('Connection Error');
+        addMessage('status', `Connection error: ${error.message}`);
+      },
+      disconnect: (reason: string) => {
+        setConnectionStatus('Disconnected');
+        addMessage('status', `Socket disconnected: ${reason}`);
+      },
+      reconnect: (attemptNumber: number) => {
+        setConnectionStatus('Reconnected');
+        addMessage('status', `Socket reconnected after ${attemptNumber} attempts`);
+      },
+      'transaction:update': (transaction: Transaction) => {
+        addMessage('transaction', 'Transaction updated', transaction);
+        setTransactions(prev => {
+          const filtered = prev.filter(t => t.id === transaction.id || t.status < 10);
+          const existingIndex = filtered.findIndex(t => t.id === transaction.id);
+          return existingIndex >= 0
+            ? filtered.map((t, i) => i === existingIndex ? transaction : t)
+            : [transaction, ...filtered];
+        });
       }
-    });
-
-    socket.io.on("ping", () => {
-      addMessage('status', 'Ping sent to server');
-    });
-
-    socket.io.on("reconnect_error", (error) => {
-      addMessage('status', `Reconnection error: ${error.message}`);
-      // Try to reinitialize connection with different settings
-      socket.io.opts.transports = ['polling'];
-      socket.connect();
-    });
-
-    socket.on("error", (error) => {
-      addMessage('status', `Socket error: ${error.message}`);
-      // Force reconnection on error
-      socket.connect();
-    });
-
-    socket.on("connect", () => {
-      setConnectionStatus('Connected');
-      addMessage('status', 'Socket connected');
-    });
-
-    socket.on("connect_error", (error) => {
-      setConnectionStatus('Connection Error');
-      addMessage('status', `Connection error: ${error.message}`);
-    });
-
-    socket.on("disconnect", (reason) => {
-      setConnectionStatus('Disconnected');
-      addMessage('status', `Socket disconnected: ${reason}`);
-    });
-
-    socket.on("reconnect", (attemptNumber) => {
-      setConnectionStatus('Reconnected');
-      addMessage('status', `Socket reconnected after ${attemptNumber} attempts`);
-    });
-
-    socket.on("transaction:create", (transaction: Transaction) => {
-      addMessage('transaction', 'New transaction received', transaction);
-    });
-
-    socket.on("transaction:update", (transaction: Transaction) => {
-      addMessage('transaction', 'Transaction updated', transaction);
-    });
-
-    return () => {
-      if (socket.connected) {
-        socket.disconnect();
-      }
-      socket.removeAllListeners();
     };
+
+    // Attach event handlers
+    Object.entries(eventHandlers).forEach(([event, handler]) => {
+      newSocket.on(event, handler);
+    });
+
+    setSocket(newSocket);
+    return newSocket;
   }, []);
 
+  const handleReconnect = useCallback(() => {
+    if (socket) {
+      socket.disconnect();
+      socket.removeAllListeners();
+      setSocket(null);
+    }
+    initializeSocket();
+    addMessage('status', 'Manual reconnection initiated');
+  }, [socket, initializeSocket]);
+
+  useEffect(() => {
+    const socket = initializeSocket();
+    const messageCleanup = setInterval(() => {
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      setMessages(prev => prev.filter(msg => {
+        const msgTime = new Date(msg.timestamp);
+        return msgTime > thirtyMinutesAgo;
+      }));
+    }, 5 * 60 * 1000);
+
+    const transactionCleanup = setInterval(() => {
+      setTransactions(prev => prev.filter(t => t.status < 10));
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(messageCleanup);
+      clearInterval(transactionCleanup);
+      socket.disconnect();
+      socket.removeAllListeners();
+    };
+  }, [initializeSocket]);
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="text-lg font-bold flex items-center justify-between">
-        <div>
-          Socket Status: 
-          <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
-            connectionStatus === 'Connected' 
-              ? 'bg-green-100 text-green-700' 
-              : 'bg-red-100 text-red-700'
-          }`}>
-            {connectionStatus}
-          </span>
-        </div>
-      </div>
-      <div className="border rounded-lg divide-y">
-        {messages.map((msg, index) => (
-          <div 
-            key={index} 
-            className="p-2 hover:bg-gray-50 cursor-pointer"
-            onClick={() => toggleExpand(index)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {msg.data ? (
-                  msg.expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
-                ) : null}
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  msg.type === 'status' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                }`}>
-                  {msg.type}
-                </span>
-                <span className="font-medium">{msg.message}</span>
-              </div>
-              <span className="text-xs text-gray-500">{msg.timestamp}</span>
-            </div>
-            
-            {msg.data && msg.expanded && (
-              <div className="mt-2 ml-6 p-2 bg-gray-50 rounded text-xs space-y-1">
-                {formatData(msg.data)}
-              </div>
-            )}
+    <div className="h-full">
+      <Card>
+        {/* Header Section */}
+        <div className="flex items-center justify-between border-b p-4">
+          <div>
+            <h1 className="text-2xl font-bold">Live Transactions Monitor</h1>
+            <p className="text-sm text-muted-foreground">
+              Monitor real-time transactions and system events
+            </p>
           </div>
-        ))}
-      </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-secondary/20 px-4 py-2 rounded-lg">
+              <span className="text-sm font-medium">Status:</span>
+              <span className={`px-3 py-1 rounded-full text-xs ${
+                connectionStatus === 'Connected' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {connectionStatus}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReconnect}
+              className="flex items-center gap-2"
+            >
+              <RefreshCcw size={16} />
+              Reconnect
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <History size={16} />
+                  Event Log
+                  {messages.length > 0 && (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-secondary rounded-full">
+                      {messages.length}
+                    </span>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle>Event Log</DialogTitle>
+                </DialogHeader>
+                <div className="divide-y overflow-y-auto max-h-[calc(80vh-120px)]">
+                  {messages.map((msg, index) => (
+                    <div 
+                      key={index} 
+                      className="p-3 hover:bg-secondary/10 cursor-pointer transition-colors"
+                      onClick={() => toggleExpand(index)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {msg.data ? (
+                            msg.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                          ) : null}
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            msg.type === 'status' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>
+                            {msg.type}
+                          </span>
+                          <span className="text-sm font-medium">{msg.message}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                      </div>
+                      
+                      {msg.data && msg.expanded && (
+                        <div className="mt-2 ml-6 p-2 bg-secondary/10 rounded text-xs space-y-1">
+                          {formatData(msg.data)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Transactions Section */}
+        <div className="relative">
+          <DataTable 
+            columns={transactionColumns} 
+            data={transactions} 
+          />
+          {transactions.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-card/50">
+              <p className="text-muted-foreground">Waiting for transactions...</p>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

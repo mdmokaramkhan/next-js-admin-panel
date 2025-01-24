@@ -216,7 +216,7 @@ const TransactionContextMenu = ({
           <ContextMenuSubTrigger>Update Status</ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
             <ContextMenuItem onClick={() => handleStatusUpdate(0)}>
-              <Pause className="mr-2 h-4 w-4" /> Not Process
+              <RefreshCw className="mr-2 h-4 w-4" /> Re-Process
             </ContextMenuItem>
             <ContextMenuItem onClick={() => handleStatusUpdate(9)}>
               <RefreshCw className="mr-2 h-4 w-4" /> Waiting Response
