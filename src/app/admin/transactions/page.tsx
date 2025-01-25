@@ -101,25 +101,27 @@ export default function TransactionPage() {
               title="Transactions"
               description="View and manage all your transactions here."
             />
-            <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                className="gap-2"
-                disabled={refreshing}
-              >
-                <RefreshCcw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-                Refresh
-              </Button>
+            <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 w-full lg:w-auto">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={handleRefresh}
+                  className="flex-1 sm:flex-none gap-2"
+                  disabled={refreshing}
+                >
+                  <RefreshCcw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                  Refresh
+                </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => setIsStatsOpen(true)}
-                className="gap-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                Statistics
-              </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsStatsOpen(true)}
+                  className="flex-1 sm:flex-none gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Statistics
+                </Button>
+              </div>
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -156,6 +158,18 @@ export default function TransactionPage() {
                       setDate({ from: range?.from, to: range?.to })
                     }
                     numberOfMonths={2}
+                    className="hidden sm:block"
+                  />
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={(range) =>
+                      setDate({ from: range?.from, to: range?.to })
+                    }
+                    numberOfMonths={1}
+                    className="block sm:hidden"
                   />
                 </PopoverContent>
               </Popover>

@@ -1,127 +1,170 @@
 "use client";
-import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api"; // Adjust the path as needed
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 
-interface AddMoney {
+import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect, useCallback } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiRequest } from "@/lib/api";
+import { 
+  IndianRupee, 
+  PlusCircle, 
+  Wallet,
+  CalendarClock,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Transaction {
   id: number;
   mobile_number: number;
   shop_name: string;
   amount: number;
-  wallet_type: string;
   balance: string;
   description: string;
   createdAt: string;
+  wallet_type: string;
 }
 
+interface StatItemProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  className?: string;
+}
+
+const StatItem = ({ title, value, icon, className }: StatItemProps) => (
+  <div className={cn("space-y-1", className)}>
+    <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+      {icon}
+      {title}
+    </p>
+    <p className="text-2xl font-bold tracking-tight">{value}</p>
+  </div>
+);
+
 export function RecentAddMoney() {
-  const [addMoneyRecords, setAddMoneyRecords] = useState<AddMoney[]>([]); // Store the recent "Add Money" records
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+  const [data, setData] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch the last 5 "Add Money" records from the API
-    const fetchAddMoney = async () => {
+  const fetchTransactions = useCallback(async () => {
+    try {
       setLoading(true);
-      setError(null);
-      try {
-        const data = await apiRequest("/transfers/recent", "GET"); // Adjust the endpoint as needed
-        if (data.success) {
-          setAddMoneyRecords(data.data || []); // Set the fetched data or fallback to an empty array
-        } else {
-          setAddMoneyRecords([]); // Fallback if the response is not successful
-        }
-      } catch (err) {
-        console.error("Error fetching Add Money records:", err);
-        setError("Failed to load Add Money records. Please try again later.");
-      } finally {
-        setLoading(false);
+      const response = await apiRequest('/transfers/recent', 'GET');
+      
+      if (response.success) {
+        setData(response.data);
+      } else {
+        throw new Error('Failed to load transactions');
       }
-    };
-
-    fetchAddMoney();
+    } catch (err) {
+      console.error('Failed to fetch wallet credits:', err);
+      setError('Failed to load transactions');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Function to format the amount to INR currency format
-  // const formatAmount = (amount: number) => {
-  //   return new Intl.NumberFormat("en-IN", {
-  //     style: "currency",
-  //     currency: "INR",
-  //     minimumFractionDigits: 0,
-  //   }).format(amount);
-  // };
+  useEffect(() => {
+    fetchTransactions();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchTransactions, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchTransactions]);
+
+  const stats = {
+    today: data?.filter(t => 
+      new Date(t.createdAt).toDateString() === new Date().toDateString()
+    ).reduce((acc, curr) => acc + curr.amount, 0) ?? 0,
+    total: data?.reduce((acc, curr) => acc + curr.amount, 0) ?? 0,
+    average: data.length ? Math.round((data.reduce((acc, curr) => acc + curr.amount, 0) / data.length)) : 0
+  };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="flex items-center animate-pulse space-x-4"
-          >
-            {/* Skeleton Avatar */}
-            <div className="h-9 w-9 rounded-full bg-gray-200"></div>
-            {/* Skeleton Text */}
-            <div className="flex-1 space-y-2">
-              <div className="h-4 w-1/3 bg-gray-200 rounded"></div>
-              <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+        <div className="grid grid-cols-3 gap-4">
+          {Array(3).fill(0).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-32" />
             </div>
-            {/* Skeleton Amount */}
-            <div className="h-4 w-16 bg-gray-200 rounded"></div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="space-y-4">
+          {Array(5).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-[76px] w-full" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (error) {
-    return <div className="text-center text-red-500">{error}</div>;
-  }
-
-  if (addMoneyRecords.length === 0) {
+  if (error || !data.length) {
     return (
-      <div className="text-center text-muted-foreground">
-        No Add Money records found.
+      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+        {error || 'No recent transactions available'}
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {addMoneyRecords.map((record) => (
-        <div key={record.id} className="flex items-center">
-          <Avatar className="h-9 w-9">
-            <AvatarFallback>
-              {record.shop_name.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="ml-4 space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {record.shop_name}
-            </p>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">
-                {record.description}
-              </p>
-              <Badge variant="secondary" className="capitalize text-xs">
-                {record.wallet_type.replace('_bal', '').toUpperCase()}
-              </Badge>
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-4">
+        <StatItem
+          title="Today's Credit"
+          value={`₹${stats.today.toLocaleString()}`}
+          icon={<PlusCircle className="h-4 w-4" />}
+        />
+        <StatItem
+          title="Total Added"
+          value={`₹${stats.total.toLocaleString()}`}
+          icon={<IndianRupee className="h-4 w-4" />}
+        />
+        <StatItem
+          title="Avg. Amount"
+          value={`₹${stats.average.toLocaleString()}`}
+          icon={<Wallet className="h-4 w-4" />}
+        />
+      </div>
+
+      <ScrollArea className="h-[300px]">
+        <div className="space-y-4 pr-4">
+          {data.map((transaction) => (
+            <div
+              key={transaction.id}
+              className="group flex items-start gap-4 rounded-lg border p-4 transition-all hover:bg-muted/50"
+            >
+              <div className="rounded-full p-2 bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <PlusCircle className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium leading-none">
+                    {transaction.shop_name}
+                  </p>
+                  <p className="text-sm font-medium">
+                    ₹{transaction.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-3 w-3" />
+                    <span>₹{parseFloat(transaction.balance).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <CalendarClock className="h-3 w-3" />
+                    <span>
+                      {formatDistanceToNow(new Date(transaction.createdAt), { 
+                        addSuffix: true 
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {new Date(record.createdAt).toLocaleString()}
-            </p>
-          </div>
-          <div className="ml-auto text-right">
-            <p className="font-medium text-green-500">
-              +₹{record.amount.toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Balance: ₹{parseFloat(record.balance).toLocaleString()}
-            </p>
-          </div>
+          ))}
         </div>
-      ))}
+      </ScrollArea>
     </div>
   );
 }

@@ -90,64 +90,64 @@ export const getStatusInfo = (status: number) => {
       label: "Not Process",
       icon: <Pause size={16} />,
       variant: "secondary",
-      color: "bg-gray-100 text-gray-700 border-gray-200"
+      color: "bg-gray-100 text-gray-700 border-gray-200",
     },
     5: {
       label: "No Parsing",
       icon: <StopCircle size={16} />,
       variant: "secondary",
-      color: "bg-gray-100 text-gray-700 border-gray-200"
+      color: "bg-gray-100 text-gray-700 border-gray-200",
     },
     // Processing/Pending States
     7: {
       label: "Processing",
       icon: <Hourglass size={16} className="animate-spin" />,
       variant: "secondary",
-      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     8: {
       label: "Process Failed",
       icon: <Pause size={16} />,
       variant: "secondary",
-      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     9: {
       label: "Waiting Response",
       icon: <RefreshCw size={16} className="animate-spin" />,
       variant: "secondary",
-      color: "bg-yellow-100 text-yellow-700 border-yellow-200"
+      color: "bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     // Success State
     10: {
       label: "Successful",
       icon: <Check size={16} />,
       variant: "secondary",
-      color: "bg-green-100 text-green-700 border-green-200"
+      color: "bg-green-100 text-green-700 border-green-200",
     },
     // Error States
     20: {
       label: "Failed",
       icon: <X size={16} />,
       variant: "secondary",
-      color: "bg-red-100 text-red-700 border-red-200"
+      color: "bg-red-100 text-red-700 border-red-200",
     },
     21: {
       label: "Wrong Number",
       icon: <Ban size={16} />,
       variant: "secondary",
-      color: "bg-red-100 text-red-700 border-red-200"
+      color: "bg-red-100 text-red-700 border-red-200",
     },
     22: {
       label: "Invalid Amount",
       icon: <Ban size={16} />,
       variant: "secondary",
-      color: "bg-red-100 text-red-700 border-red-200"
+      color: "bg-red-100 text-red-700 border-red-200",
     },
     23: {
       label: "Provider Down",
       icon: <AlertTriangle size={16} />,
       variant: "secondary",
-      color: "bg-red-100 text-red-700 border-red-200"
+      color: "bg-red-100 text-red-700 border-red-200",
     },
   } as const;
 
@@ -156,7 +156,7 @@ export const getStatusInfo = (status: number) => {
       label: "Unknown",
       icon: null,
       variant: "secondary",
-      color: "bg-gray-100 text-gray-700 border-gray-200"
+      color: "bg-gray-100 text-gray-700 border-gray-200",
     }
   );
 };
@@ -179,7 +179,8 @@ const TransactionContextMenu = ({
         { status: newStatus, transactionId: transaction.id }
       );
 
-      if (response.status) { // Changed from response.success to response.status
+      if (response.status) {
+        // Changed from response.success to response.status
         toast.success(response.message || "Status updated successfully", {
           id: loadingToast,
         });
@@ -272,7 +273,10 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "createdAt",
     header: "Date",
     cell: ({ row }) => (
-      <div className="" title={format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}>
+      <div
+        className=""
+        title={format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}
+      >
         {format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}
       </div>
     ),
@@ -281,10 +285,10 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     accessorKey: "provider_code",
     header: "Provider",
     cell: ({ row }) => {
-      const logoPath = row.original.providerDetails?.provider_logo 
+      const logoPath = row.original.providerDetails?.provider_logo
         ? `/images/${row.original.providerDetails.provider_logo}`
         : null;
-      
+
       return (
         <div className="grid grid-cols-[auto,1fr] gap-2 items-center">
           <Avatar>
@@ -314,9 +318,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       <div className="space-y-1">
         <p className="font-medium text-nowrap">
           Amt:{" "}
-          <span className="text-green-600">
-            ₹ {row.original.amount}.00
-          </span>
+          <span className="text-green-600">₹ {row.original.amount}.00</span>
         </p>
         <p className="font-normal text-muted-foreground">
           Price:{" "}
@@ -334,7 +336,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       const status = row.original.status;
       const statusInfo = getStatusInfo(status);
       return (
-        <Badge 
+        <Badge
           variant="secondary"
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border ${statusInfo.color}`}
         >
@@ -358,17 +360,23 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     header: "Module Details",
     cell: ({ row }) => (
       <div className="space-y-1 text-sm">
-        <p className="font-medium">
+        <p className="font-medium columns">
           <span className="text-nowrap">
             {row.original.moduleDetails?.module_name ?? "N/A"}
           </span>
+          <Badge
+            variant="outline"
+            className={`inline-flex items-center gap-1 px-2 py-1 ml-2 text-xs font-semibold border`}
+          >
+            {row.original.lapu_id ?? "N/A"}
+          </Badge>
         </p>
         <p className="text-xs text-nowrap text-muted-foreground">
           Lapu Bal:{" "}
-          {row.original.moduleDetails 
-            ? (row.original.lapu_bal != null 
-                ? Number(row.original.lapu_bal).toFixed(2)
-                : "N/A") 
+          {row.original.moduleDetails
+            ? row.original.lapu_bal != null
+              ? Number(row.original.lapu_bal).toFixed(2)
+              : "N/A"
             : "N/A"}
         </p>
       </div>

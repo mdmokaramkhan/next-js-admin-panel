@@ -40,6 +40,7 @@ export function DataTable<TData extends Transaction, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = useState({});
   const [searchFilter, setSearchFilter] = useState<string>("");
+  const [lapuSearchFilter, setLapuSearchFilter] = useState<string>(""); // Add this line
   const [providerFilter, setProviderFilter] = useState<string>("");
   const [moduleFilter, setModuleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -68,18 +69,23 @@ export function DataTable<TData extends Transaction, TValue>({
 
   const resetFilters = () => {
     setSearchFilter("");
+    setLapuSearchFilter(""); // Add this line
     setProviderFilter("");
     setModuleFilter("");
     setStatusFilter("");
   };
 
-  const isAnyFilterActive = searchFilter || providerFilter || moduleFilter || statusFilter;
+  const isAnyFilterActive = searchFilter || lapuSearchFilter || providerFilter || moduleFilter || statusFilter; // Modify this line
 
   const filteredData = useMemo(() => {
     return data.filter((row: Transaction) => {
       const searchMatch = searchFilter
         ? row.number.toLowerCase().includes(searchFilter.toLowerCase()) ||
           String(row.mobile_number).includes(searchFilter)
+        : true;
+
+      const lapuMatch = lapuSearchFilter
+        ? String(row.lapu_id).toLowerCase().includes(lapuSearchFilter.toLowerCase())
         : true;
 
       const providerMatch = providerFilter
@@ -100,9 +106,9 @@ export function DataTable<TData extends Transaction, TValue>({
           )
         : true;
 
-      return searchMatch && providerMatch && moduleMatch && statusMatch;
+      return searchMatch && lapuMatch && providerMatch && moduleMatch && statusMatch;
     });
-  }, [data, searchFilter, providerFilter, moduleFilter, statusFilter]);
+  }, [data, searchFilter, lapuSearchFilter, providerFilter, moduleFilter, statusFilter]);
 
   useEffect(() => {
     onFilter?.(filteredData as TData[]);
@@ -119,60 +125,73 @@ export function DataTable<TData extends Transaction, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4">
-        <Input
-          placeholder="Search by number or mobile..."
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          className="w-[300px]"
-        />
-        
-        <div className="flex gap-4">
-          <DataTableFilterBox
-            filterKey="provider"
-            title="Provider"
-            options={uniqueProviders}
-            setFilterValue={(value) => {
-              setProviderFilter(value as string);
-              return Promise.resolve(new URLSearchParams());
-            }}
-            filterValue={providerFilter}
-          />
-          
-          <DataTableFilterBox
-            filterKey="module"
-            title="Module"
-            options={uniqueModules}
-            setFilterValue={(value) => {
-              setModuleFilter(value as string);
-              return Promise.resolve(new URLSearchParams());
-            }}
-            filterValue={moduleFilter}
-          />
+      <div className="grid gap-4">
+        {/* Search Inputs and Filters Container */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Inputs */}
+          <div className="flex flex-wrap items-center gap-3 flex-grow">
+            <Input
+              placeholder="Search by number or mobile..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="w-full sm:w-[200px] lg:w-[250px]"
+            />
+            
+            <Input
+              placeholder="Search by LAPU number..."
+              value={lapuSearchFilter}
+              onChange={(e) => setLapuSearchFilter(e.target.value)}
+              className="w-full sm:w-[200px] lg:w-[250px]"
+            />
 
-          <DataTableFilterBox
-            filterKey="status"
-            title="Status"
-            options={statusOptions}
-            setFilterValue={(value) => {
-              setStatusFilter(value as string);
-              return Promise.resolve(new URLSearchParams());
-            }}
-            filterValue={statusFilter}
+            {/* Filter Boxes */}
+            <DataTableFilterBox
+              filterKey="provider"
+              title="Provider"
+              options={uniqueProviders}
+              setFilterValue={(value) => {
+                setProviderFilter(value as string);
+                return Promise.resolve(new URLSearchParams());
+              }}
+              filterValue={providerFilter}
+            />
+            
+            <DataTableFilterBox
+              filterKey="module"
+              title="Module"
+              options={uniqueModules}
+              setFilterValue={(value) => {
+                setModuleFilter(value as string);
+                return Promise.resolve(new URLSearchParams());
+              }}
+              filterValue={moduleFilter}
+            />
+
+            <DataTableFilterBox
+              filterKey="status"
+              title="Status"
+              options={statusOptions}
+              setFilterValue={(value) => {
+                setStatusFilter(value as string);
+                return Promise.resolve(new URLSearchParams());
+              }}
+              filterValue={statusFilter}
+            />
+          </div>
+
+          {/* Reset Filter Button */}
+          <DataTableResetFilter
+            isFilterActive={isAnyFilterActive}
+            onReset={resetFilters}
           />
         </div>
-
-        <DataTableResetFilter
-          isFilterActive={isAnyFilterActive}
-          onReset={resetFilters}
-        />
       </div>
 
       {loading ? (
         <DataTableSkeleton columnCount={8} rowCount={10} />
       ) : (
         <div>
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -220,12 +239,14 @@ export function DataTable<TData extends Transaction, TValue>({
               </TableBody>
             </Table>
           </div>
-          <DataTablePagination
-            table={table}
-            pageSizeOptions={pageSizeOptions}
-            totalItems={data.length}
-            filteredDataCount={filteredData.length}
-          />
+          <div className="mt-4">
+            <DataTablePagination
+              table={table}
+              pageSizeOptions={pageSizeOptions}
+              totalItems={data.length}
+              filteredDataCount={filteredData.length}
+            />
+          </div>
         </div>
       )}
     </div>
