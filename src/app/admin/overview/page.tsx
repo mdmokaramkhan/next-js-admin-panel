@@ -1,14 +1,12 @@
 "use client";
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, XAxis, ResponsiveContainer, 
          Tooltip, PieChart, Pie, Cell, 
          YAxis} from "recharts";
-import { TrendingUp, TrendingDown, Circle } from "lucide-react";
+import { TrendingUp, Circle } from "lucide-react";
 import {
   Users,
-  ArrowUpRight,
-  ArrowDownRight,
   RefreshCw,
   Wallet,
   BarChart3,
@@ -31,10 +29,11 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
-import { cva } from "class-variance-authority";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import LiveTransactions from '../analytics/live-transactions';
+import { StatCard } from "./_components/stat-card";
+import { WeeklyComparison } from "./_components/weekly-comparison";
 
 interface WeeklyComparison {
   current_week: WeekData;
@@ -135,101 +134,6 @@ interface DashboardStats {
   user_activity?: UserActivity;
 }
 
-const cardVariants = cva("relative overflow-hidden transition-all duration-200", {
-  variants: {
-    variant: {
-      default: "border hover:border-foreground/10",
-      primary: "border hover:border-primary/50",
-      success: "border hover:border-emerald-500/50",
-      warning: "border hover:border-yellow-500/50",
-      danger: "border hover:border-rose-500/50",
-    }
-  },
-  defaultVariants: {
-    variant: "default"
-  }
-});
-
-const renderStatCard = (
-  title: string,
-  mainValue: string | number,
-  subValue: string | number,
-  icon: React.ReactNode,
-  trend: number,
-  variant: "default" | "primary" | "success" | "warning" | "danger" = "default",
-  prefix?: string
-) => (
-  <Card className={cn(cardVariants({ variant }), "group")}>
-    <CardHeader className="pb-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className={cn(
-            "rounded-lg p-2.5 transition-colors",
-            variant === "primary" && "text-primary",
-            variant === "success" && "text-emerald-500",
-            variant === "warning" && "text-yellow-500",
-            variant === "danger" && "text-rose-500",
-            variant === "default" && "text-muted-foreground",
-            "group-hover:bg-secondary/50"
-          )}>
-            {React.cloneElement(icon as React.ReactElement, { 
-              // className: "h-4 w-4" 
-            })}
-          </div>
-          <CardTitle className="text-sm font-medium">
-            {title}
-          </CardTitle>
-        </div>
-        {trend !== 0 && (
-          <span className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
-            trend > 0 
-              ? "text-emerald-500" 
-              : "text-rose-500"
-          )}>
-            {trend > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {Math.abs(trend).toFixed(1)}%
-          </span>
-        )}
-      </div>
-    </CardHeader>
-
-    <CardContent>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-baseline gap-1">
-          {prefix && (
-            <span className="text-sm font-medium text-muted-foreground">
-              {prefix}
-            </span>
-          )}
-          <span className={cn(
-            "text-2xl font-semibold tracking-tight",
-            variant === "primary" && "text-primary",
-            variant === "success" && "text-emerald-500",
-            variant === "warning" && "text-yellow-500",
-            variant === "danger" && "text-rose-500"
-          )}>
-            {typeof mainValue === 'number' ? mainValue.toLocaleString() : mainValue}
-          </span>
-        </div>
-        <span className="text-sm text-muted-foreground">
-          {subValue}
-        </span>
-      </div>
-    </CardContent>
-
-    <div className={cn(
-      "absolute bottom-0 left-0 right-0 h-[2px] transition-all duration-500",
-      variant === "primary" && "bg-primary",
-      variant === "success" && "bg-emerald-500",
-      variant === "warning" && "bg-yellow-500",
-      variant === "danger" && "bg-rose-500",
-      variant === "default" && "bg-foreground/10",
-      "opacity-0 scale-x-0 group-hover:opacity-100 group-hover:scale-x-100 origin-left"
-    )} />
-  </Card>
-);
-
 export default function Overview() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -238,7 +142,7 @@ export default function Overview() {
     from: Date | undefined;
     to: Date | undefined;
   }>({
-    from: new Date(new Date().setDate(new Date().getDate() - 7)),
+    from: new Date(new Date().setDate(new Date().getDate() - 3)), // Changed from 7 to 3 days
     to: new Date(),
   });
 
@@ -284,18 +188,6 @@ export default function Overview() {
     }
   }, [fetchDashboardStats, date.from, date.to]);
 
-  const formatChartData = (weeklyData?: WeeklyComparison) => {
-    if (!weeklyData) return [];
-    
-    return weeklyData.current_week.daily_sales.map((current, index) => {
-      const last = weeklyData.last_week.daily_sales[index];
-      return {
-        date: new Date(current.date).toLocaleDateString('en-US', { weekday: 'short' }),
-        current: current.total_amount,
-        previous: last.total_amount,
-      };
-    });
-  };
 
   const formatTrendsData = (trends?: { timeframe: string; trends: TransactionTrend[] }) => {
     if (!trends?.trends || !Array.isArray(trends.trends)) return [];
@@ -312,46 +204,8 @@ export default function Overview() {
       }));
   };
 
-  const getWeeklyTrendContent = () => {
-    const changePercentage = stats?.weekly_comparison?.week_over_week_changes?.amount_change_percentage;
-    
-    if (typeof changePercentage !== 'number') {
-      return (
-        <div className="text-muted-foreground">No comparison data available</div>
-      );
-    }
-
-    const isPositive = changePercentage > 0;
-    const absoluteChange = Math.abs(changePercentage).toFixed(1);
-
-    return (
-      <>
-        {isPositive ? (
-          <>
-            Trending up by {absoluteChange}% this week
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
-          </>
-        ) : (
-          <>
-            Trending down by {absoluteChange}% this week
-            <TrendingDown className="h-4 w-4 text-rose-500" />
-          </>
-        )}
-      </>
-    );
-  };
 
   // Add chartConfig
-  const chartConfig = {
-    current: {
-      label: "Current Week",
-      color: "hsl(var(--chart-1))",
-    },
-    previous: {
-      label: "Previous Week",
-      color: "hsl(var(--chart-2))",
-    },
-  };
 
   const trendsConfig = {
     transactions: {
@@ -368,32 +222,6 @@ export default function Overview() {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label } : any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border bg-background p-2 shadow-lg">
-          <div className="font-medium">{label}</div>
-          <div className="mt-2 flex flex-col gap-1">
-            {payload.map((entry: any) => (
-              <div key={entry.name} className="flex items-center justify-between gap-8">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: entry.fill }}
-                  />
-                  <span className="text-muted-foreground">
-                    {entry.name}
-                  </span>
-                </div>
-                <span>₹{entry.value.toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
 
   const calculateTotalVolume = (trends?: { timeframe: string; trends: TransactionTrend[] }) => {
@@ -516,23 +344,61 @@ export default function Overview() {
     router.push('/admin/users');
   };
 
+  const statsCards = [
+    {
+      title: "User Activity",
+      mainValue: stats?.user_metrics.total_users || 0,
+      subValue: `+${stats?.user_metrics.new_users_30d || 0} new this month`,
+      icon: <Users className="h-4 w-4" />,
+      trend: ((stats?.user_metrics.new_users_30d || 0) / (stats?.user_metrics.total_users || 1) * 100),
+      variant: "primary" as const
+    },
+    {
+      title: "Transactions",
+      mainValue: stats?.transaction_metrics.total_transactions || 0,
+      subValue: `${stats?.transaction_metrics.success_rate || 0}% success rate`,
+      icon: <BarChart3 className="h-4 w-4" />,
+      trend: parseFloat(stats?.transaction_metrics.success_rate || "0"),
+      variant: parseFloat(stats?.transaction_metrics.success_rate || "0") >= 90 ? "success" as const : "danger" as const
+    },
+    {
+      title: "Service Performance",
+      mainValue: stats?.service_performance?.[0]?.transaction_count || 0,
+      subValue: `${stats?.service_performance?.[0]?.service_name || "No Service"}`,
+      icon: <BarChart3 className="h-4 w-4" />,
+      trend: ((stats?.service_performance?.[0]?.total_revenue || 0) / 
+        (stats?.service_performance?.[0]?.total_amount || 1) * 100 - 100),
+      variant: "warning" as const,
+      prefix: "₹"
+    },
+    {
+      title: "System Balance",
+      mainValue: (stats?.wallet_metrics.total_system_balance || 0).toFixed(2),
+      subValue: `Recharge: ₹${(stats?.wallet_metrics.total_recharge_balance || 0).toFixed(2)}`,
+      icon: <Wallet className="h-4 w-4" />,
+      trend: 100,
+      variant: "success" as const,
+      prefix: "₹"
+    }
+  ];
+
   return (
     <PageContainer scrollable>
       <div className="space-y-4">
         <Tabs defaultValue="overview" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <Heading
               title="Dashboard Overview"
               description="Monitor your system's performance and analytics."
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
                     className={cn(
-                      "w-[300px] justify-start text-left font-normal",
+                      "w-full sm:w-[300px] justify-start text-left font-normal",
                       !date && "text-muted-foreground"
                     )}
                   >
@@ -560,130 +426,42 @@ export default function Overview() {
                     onSelect={(range) =>
                       setDate({ from: range?.from, to: range?.to })
                     }
-                    numberOfMonths={2}
+                    numberOfMonths={1}
                   />
                 </PopoverContent>
               </Popover>
 
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="live-transactions">Live Transactions</TabsTrigger>
-                <TabsTrigger value="reports">Reports</TabsTrigger>
-              </TabsList>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={fetchDashboardStats}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-              </Button>
+              <div className="flex items-center gap-2">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="live-transactions">Live</TabsTrigger>
+                  <TabsTrigger value="reports">Reports</TabsTrigger>
+                </TabsList>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={fetchDashboardStats}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                </Button>
+              </div>
             </div>
           </div>
           <Separator />
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {renderStatCard(
-                "User Activity",
-                stats?.user_metrics.total_users || 0,
-                `+${stats?.user_metrics.new_users_30d || 0} new this month`,
-                <Users className="h-4 w-4" />,
-                ((stats?.user_metrics.new_users_30d || 0) / (stats?.user_metrics.total_users || 1) * 100),
-                "primary"
-              )}
-              
-              {renderStatCard(
-                "Transactions",
-                stats?.transaction_metrics.total_transactions || 0,
-                `${stats?.transaction_metrics.success_rate || 0}% success rate`,
-                <BarChart3 className="h-4 w-4" />,
-                parseFloat(stats?.transaction_metrics.success_rate || "0"),
-                parseFloat(stats?.transaction_metrics.success_rate || "0") >= 90 ? "success" : "danger"
-              )}
-              
-              {renderStatCard(
-                "Service Performance",
-                stats?.service_performance?.[0]?.transaction_count || 0,
-                `${stats?.service_performance?.[0]?.service_name || "No Service"}`,
-                <BarChart3 className="h-4 w-4" />,
-                ((stats?.service_performance?.[0]?.total_revenue || 0) / 
-                (stats?.service_performance?.[0]?.total_amount || 1) * 100 - 100),
-                "warning",
-                "₹"
-              )}
-              
-              {renderStatCard(
-                "System Balance",
-                (stats?.wallet_metrics.total_system_balance || 0).toFixed(2),
-                `Recharge: ₹${(stats?.wallet_metrics.total_recharge_balance || 0).toFixed(2)}`,
-                <Wallet className="h-4 w-4" />,
-                100,
-                "success",
-                "₹"
-              )}
+              {statsCards.map((card, index) => (
+                <StatCard key={index} {...card} />
+              ))}
             </div>
 
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle>Weekly Performance Comparison</CardTitle>
-                  <CardDescription>
-                    {stats?.weekly_comparison?.current_week.start_date} - {stats?.weekly_comparison?.current_week.end_date}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart 
-                      data={formatChartData(stats?.weekly_comparison)}
-                      className="w-full aspect-[4/3]"
-                      margin={{ top: 0, right: 0, bottom: 16, left: 0 }}
-                    >
-                      <CartesianGrid 
-                        horizontal 
-                        strokeDasharray="4" 
-                        stroke="hsl(var(--border))" 
-                        className="opacity-20" 
-                      />
-                      <XAxis
-                        dataKey="date"
-                        tickLine={false}
-                        axisLine={false}
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                      />
-                      <Tooltip 
-                        content={CustomTooltip}
-                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.1 }}
-                      />
-                      <Bar
-                        dataKey="current"
-                        fill={chartConfig.current.color}
-                        radius={[4, 4, 0, 0]}
-                        name={chartConfig.current.label}
-                      />
-                      <Bar
-                        dataKey="previous"
-                        fill={chartConfig.previous.color}
-                        radius={[4, 4, 0, 0]}
-                        name={chartConfig.previous.label}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-                <CardFooter className="flex-col items-start gap-2 text-sm">
-                  <div className="flex gap-2 font-medium leading-none">
-                    {getWeeklyTrendContent()}
-                  </div>
-                  <div className="leading-none text-muted-foreground">
-                    {stats?.weekly_comparison?.current_week?.totals?.total_transactions ?? 0} transactions this week
-                  </div>
-                </CardFooter>
-              </Card>
-
+              <WeeklyComparison data={stats?.weekly_comparison} />
               {renderServiceBreakdown()}
 
               <Card className="col-span-full">
@@ -694,7 +472,7 @@ export default function Overview() {
                       <CardDescription>Success rate and revenue by provider</CardDescription>
                     </div>
                     {/* Summary numbers */}
-                    <div className="flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-4">
                       {[
                         {
                           label: "Total Volume",
@@ -718,7 +496,7 @@ export default function Overview() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {stats?.provider_performance?.map((provider) => (
                       <div
                         key={provider.provider_code}
@@ -1013,9 +791,9 @@ export default function Overview() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="grid gap-8 md:grid-cols-2 h-[650px]">
+                <CardContent className="grid gap-8 grid-cols-1 md:grid-cols-2 h-auto md:h-[650px]">
                   {/* Left column - Top Users */}
-                  <div className="flex flex-col h-full border rounded-lg p-4">
+                  <div className="flex flex-col h-[500px] md:h-full border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h4 className="text-sm font-semibold">Top Performing Users</h4>
@@ -1137,8 +915,8 @@ export default function Overview() {
 
                   {/* Right column - Growth Metrics */}
                   <div className="flex flex-col h-full border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
+                    <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+                      <div className="mb-4 sm:mb-0">
                         <h4 className="text-sm font-semibold">User Growth & Metrics</h4>
                         <p className="text-xs text-muted-foreground mt-1">Overall statistics</p>
                       </div>
@@ -1154,7 +932,7 @@ export default function Overview() {
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                       {[
                         {
                           title: "New Users",
@@ -1219,78 +997,80 @@ export default function Overview() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex-1 p-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={stats?.user_activity?.user_growth}
-                            margin={{ top: 0, right: 8, left: -15, bottom: 0 }}
-                          >
-                            <CartesianGrid 
-                              strokeDasharray="3 3" 
-                              className="opacity-20"
-                              horizontal={true}
-                              vertical={false}
-                            />
-                            {/* Background bars for visual reference */}
-                            <Bar
-                              dataKey="new_users"
-                              fill="hsla(var(--primary), 0.2)"
-                              radius={[0, 0, 0, 0]}
-                              isAnimationActive={false}
-                            />
-                            {/* Main bars */}
-                            <Bar
-                              dataKey="new_users"
-                              fill="hsl(var(--primary))"
-                              radius={[4, 4, 0, 0]}
-                            />
-                            <XAxis
-                              dataKey="date"
-                              axisLine={false}
-                              tickLine={false}
-                              tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
-                                day: '2-digit',
-                                month: 'short'
-                              })}
-                              fontSize={12}
-                              stroke="hsl(var(--muted-foreground))"
-                              minTickGap={10}
-                            />
-                            <YAxis
-                              axisLine={false}
-                              tickLine={false}
-                              fontSize={12}
-                              stroke="hsl(var(--muted-foreground))"
-                              tickFormatter={(value) => `${value}`}
-                              width={30}
-                            />
-                            <Tooltip
-                              content={({ active, payload, label }) => {
-                                if (active && payload && payload.length) {
-                                  return (
-                                    <div className="rounded-lg border bg-background p-2 shadow-lg">
-                                      <div className="font-medium">
-                                        {new Date(label).toLocaleDateString('en-US', { 
-                                          weekday: 'short',
-                                          month: 'short',
-                                          day: 'numeric'
-                                        })}
+                      <div className="flex-1 p-4 overflow-x-auto">
+                        <div className="min-w-[600px] h-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                              data={stats?.user_activity?.user_growth}
+                              margin={{ top: 0, right: 8, left: -15, bottom: 0 }}
+                            >
+                              <CartesianGrid 
+                                strokeDasharray="3 3" 
+                                className="opacity-20"
+                                horizontal={true}
+                                vertical={false}
+                              />
+                              {/* Background bars for visual reference */}
+                              <Bar
+                                dataKey="new_users"
+                                fill="hsla(var(--primary), 0.2)"
+                                radius={[0, 0, 0, 0]}
+                                isAnimationActive={false}
+                              />
+                              {/* Main bars */}
+                              <Bar
+                                dataKey="new_users"
+                                fill="hsl(var(--primary))"
+                                radius={[4, 4, 0, 0]}
+                              />
+                              <XAxis
+                                dataKey="date"
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
+                                  day: '2-digit',
+                                  month: 'short'
+                                })}
+                                fontSize={12}
+                                stroke="hsl(var(--muted-foreground))"
+                                minTickGap={10}
+                              />
+                              <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                fontSize={12}
+                                stroke="hsl(var(--muted-foreground))"
+                                tickFormatter={(value) => `${value}`}
+                                width={30}
+                              />
+                              <Tooltip
+                                content={({ active, payload, label }) => {
+                                  if (active && payload && payload.length) {
+                                    return (
+                                      <div className="rounded-lg border bg-background p-2 shadow-lg">
+                                        <div className="font-medium">
+                                          {new Date(label).toLocaleDateString('en-US', { 
+                                            weekday: 'short',
+                                            month: 'short',
+                                            day: 'numeric'
+                                          })}
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full bg-primary" />
+                                          <span className="text-sm text-muted-foreground">
+                                            {payload[0].value} new users
+                                          </span>
+                                        </div>
                                       </div>
-                                      <div className="mt-1 flex items-center gap-2">
-                                        <div className="h-2 w-2 rounded-full bg-primary" />
-                                        <span className="text-sm text-muted-foreground">
-                                          {payload[0].value} new users
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.1 }}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
                     </div>
                   </div>
