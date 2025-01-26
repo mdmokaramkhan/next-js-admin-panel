@@ -5,6 +5,8 @@ import {
   ColumnDef,
   getCoreRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
   flexRender,
 } from "@tanstack/react-table";
@@ -44,6 +46,9 @@ export function DataTable<TData extends Transaction, TValue>({
   const [providerFilter, setProviderFilter] = useState<string>("");
   const [moduleFilter, setModuleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "updatedAt", desc: true } // Default sort by updatedAt in descending order
+  ]);
 
   // Get unique providers from data
   const uniqueProviders = useMemo(() => {
@@ -119,8 +124,14 @@ export function DataTable<TData extends Transaction, TValue>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    state: { rowSelection },
+    getSortedRowModel: getSortedRowModel(),
+    enableSorting: true,
+    state: { 
+      rowSelection,
+      sorting,
+    },
     onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
   });
 
   return (

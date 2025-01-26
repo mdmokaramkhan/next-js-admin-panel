@@ -17,6 +17,7 @@ import {
   Check,
   Ban,
   AlertTriangle,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   ContextMenu,
@@ -267,19 +268,60 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "id",
-    header: "ID",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4"
+        >
+          ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    enableSorting: true,
   },
   {
-    accessorKey: "createdAt",
-    header: "Date",
-    cell: ({ row }) => (
-      <div
-        className=""
-        title={format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}
-      >
-        {format(new Date(row.original.createdAt!), "dd MMM yyyy hh:mm a")}
-      </div>
-    ),
+    accessorKey: "updatedAt",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4"
+        >
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const aDate = rowA.original.updatedAt || rowA.original.createdAt;
+      const bDate = rowB.original.updatedAt || rowB.original.createdAt;
+      if (!aDate || !bDate) return 0;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    },
+    cell: ({ row }) => {
+      const updated = row.original.updatedAt;
+      const created = row.original.createdAt!;
+      const isUpdated = updated && updated !== created;
+      const dateToShow = isUpdated ? updated : created;
+      
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm whitespace-nowrap" title={format(new Date(dateToShow), "dd MMM yyyy hh:mm:ss a")}>
+            {format(new Date(dateToShow), "dd MMM yyyy hh:mm a")}
+          </span>
+          {isUpdated && (
+            <span className="text-xs text-muted-foreground">
+              (updated)
+            </span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "provider_code",
@@ -310,10 +352,23 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
   {
     accessorKey: "number",
     header: "Number",
+    enableSorting: false,
   },
   {
-    accessorKey: "amount_price",
-    header: "Amount & Price",
+    accessorKey: "amount",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4"
+        >
+          Amount & Price
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    enableSorting: true,
     cell: ({ row }) => (
       <div className="space-y-1">
         <p className="font-medium text-nowrap">
@@ -331,7 +386,8 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: "Status", // Changed from button to simple text
+    enableSorting: false, // Disabled sorting
     cell: ({ row }) => {
       const status = row.original.status;
       const statusInfo = getStatusInfo(status);
@@ -360,17 +416,17 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     header: "Module Details",
     cell: ({ row }) => (
       <div className="space-y-1 text-sm">
-        <p className="font-medium columns">
+        <div className="font-medium flex items-center gap-2">
           <span className="text-nowrap">
             {row.original.moduleDetails?.module_name ?? "N/A"}
           </span>
           <Badge
             variant="outline"
-            className={`inline-flex items-center gap-1 px-2 py-1 ml-2 text-xs font-semibold border`}
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold border"
           >
             {row.original.lapu_id ?? "N/A"}
           </Badge>
-        </p>
+        </div>
         <p className="text-xs text-nowrap text-muted-foreground">
           Lapu Bal:{" "}
           {row.original.moduleDetails
