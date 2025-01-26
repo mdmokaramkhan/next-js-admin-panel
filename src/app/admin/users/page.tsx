@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Send, UserPlus } from "lucide-react";
+import { Send, UserPlus, Wallet, RefreshCcw } from "lucide-react"; // Add Wallet and RefreshCcw icons
 import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";
@@ -12,6 +12,7 @@ import { UserTable } from "./components/user-table";
 import { User, columns } from "./columns";
 import AddUserDialog from "./components/add-user-modal"; // Import the Add User dialog component
 import TransferMoneyDialog from "./components/send-money-modal"; // Import the new Transfer Money dialog component
+import AddMoneyModal from "./components/add-money"; // Add this import
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -193,13 +194,23 @@ export default function UsersPage() {
             title="Users"
             description="Manage your users and their roles here."
           />
-          <div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              className="space-x-1 mr-2"
+              className="space-x-1"
               onClick={() => setIsTransferDialogOpen(true)}
             >
               <Send /> Send Money
+            </Button>
+            <AddMoneyModal />
+            <Button
+              variant="outline"
+              className="space-x-1"
+              onClick={fetchUsers}
+              disabled={loading}
+            >
+              <RefreshCcw className={loading ? "animate-spin" : ""} />
+              {loading ? "Refreshing..." : "Refresh"}
             </Button>
             <Button className="space-x-1" onClick={() => setIsDialogOpen(true)}>
               <UserPlus /> Add User
