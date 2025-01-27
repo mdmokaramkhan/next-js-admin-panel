@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import PageContainer from "@/components/page-container";
 import { Button } from "@/components/ui/button";
-import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings2, Pencil, Trash2 } from "lucide-react";
+import { Settings2, Pencil, Trash2, Check, ArrowUpCircle, Router, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,9 +23,18 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type Module = {
   id: string;
@@ -61,27 +68,34 @@ export default function Overview() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
-  const [, setViewMode] = useState<ViewMode>("none");
+  const [viewMode, setViewMode] = useState<ViewMode>("none");
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [parsings, setParsings] = useState<Parsing[]>([]);
   const [editDialog, setEditDialog] = useState(false);
   const [parsingFormOpen, setParsingFormOpen] = useState(false);
   const [selectedParsing, setSelectedParsing] = useState<Parsing | null>(null);
   const [deleteParsingDialog, setDeleteParsingDialog] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string>("all");
+  const [showModules, setShowModules] = useState(true);
 
   useEffect(() => {
-    const fetchModules = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await apiRequest("modules", "GET");
-        setModules(response.data || []);
+        const [modulesResponse, parsingsResponse] = await Promise.all([
+          apiRequest("modules", "GET"),
+          apiRequest("parsings", "GET")
+        ]);
+        
+        setModules(modulesResponse.data || []);
+        setParsings(parsingsResponse.data || []);
       } catch (error) {
-        console.error("Failed to fetch modules:", error);
+        console.error("Failed to fetch initial data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchModules();
+    fetchInitialData();
   }, []);
 
   const handleDelete = async (module: Module) => {
@@ -134,19 +148,24 @@ export default function Overview() {
         throw new Error("Invalid module ID");
       }
 
+      const parsing = parsings.find((p) => p.id === id);
+      if (!parsing) {
+        throw new Error("Parsing not found");
+      }
+
       const updateData = {
-        id: parsings.find((p) => p.id === id)?.id,
+        id: parsing.id,
         status,
         module_id: parseInt(selectedModule.id, 10),
-        provider_code: parsings.find((p) => p.id === id)?.provider_code,
-        parsing: parsings.find((p) => p.id === id)?.parsing,
+        provider_code: parsing.provider_code,
+        parsing: parsing.parsing,
       };
 
       const response = await apiRequest(`parsings/${id}`, "PUT", updateData);
 
       if (response.success) {
-        // Refresh the entire parsings list to ensure consistency
-        await fetchParsings(selectedModule.id);
+        // Update the local state instead of fetching
+        setParsings(parsings.map(p => p.id === id ? { ...p, status } : p));
         toast.success("Parsing status updated successfully!", {
           id: loadingToast,
         });
@@ -161,15 +180,6 @@ export default function Overview() {
         id: loadingToast,
       });
       return false;
-    }
-  };
-
-  const fetchParsings = async (moduleId: string) => {
-    try {
-      const response = await apiRequest(`/parsings/module/${moduleId}`, "GET");
-      setParsings(response.data || []);
-    } catch (error) {
-      console.error("Failed to fetch parsings:", error);
     }
   };
 
@@ -197,11 +207,13 @@ export default function Overview() {
         ...data,
         module_id: selectedModule?.id,
       };
-      await apiRequest(`/parsings/${selectedParsing?.id}`, "PUT", parsingData);
+      const response = await apiRequest(`/parsings/${selectedParsing?.id}`, "PUT", parsingData);
 
-      // Refresh the entire parsings list after update
-      if (selectedModule) {
-        await fetchParsings(selectedModule.id);
+      if (response.success) {
+        // Update local state instead of fetching
+        setParsings(parsings.map(p => 
+          p.id === selectedParsing?.id ? { ...p, ...response.data } : p
+        ));
       }
 
       setParsingFormOpen(false);
@@ -221,178 +233,320 @@ export default function Overview() {
     }
   };
 
-  return (
-    <PageContainer scrollable>
-      <div className="space-y-4 mb-10">
-        <div className="flex items-center justify-between space-y-2">
-          <Heading
-            title="Modules Management"
-            description="Manage your SMS gateway modules and their parsings"
-          />
-        </div>
-        <Separator />
-        <div className="grid h-[calc(100vh-10rem)] grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Panel - Modules List */}
-          <div className="h-full flex flex-col rounded-md border">
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-medium">Module List</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {modules.length} total modules
-                  </p>
-                </div>
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline">New Module</Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="right"
-                    className="w-[400px] sm:w-[540px] overflow-y-auto"
-                  >
-                    <SheetHeader className="sticky top-0 z-10 bg-background pb-4">
-                      <SheetTitle>Create New Module</SheetTitle>
-                    </SheetHeader>
-                    <div className="py-6">
-                      <ModuleForm
-                        module={{
-                          id: "",
-                          module_name: "",
-                          response_group: "",
-                          balance: 0,
-                        }}
-                        onSave={handleSave}
-                        onCancel={() => setEditDialog(false)}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
+  // Add sorting function for parsings
+  const sortedParsings = [...parsings].sort((a, b) => 
+    a.provider_code.localeCompare(b.provider_code)
+  );
 
-            <div className="flex-1 overflow-auto p-4">
-              {loading ? (
-                <div className="flex h-[150px] items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
+  // Get unique providers from parsings
+  const providers = Array.from(new Set(parsings.map(p => p.provider.provider_name)));
+
+  // Get unique providers with their full details
+  const uniqueProviders = Array.from(
+    new Map(
+      parsings.map(p => [
+        p.provider.provider_name,
+        p.provider // Keep the full provider object
+      ])
+    ).values()
+  );
+
+  // Update filteredParsings to include provider filter
+  const filteredParsings = sortedParsings
+    .filter(parsing => {
+      const moduleMatch = selectedModule ? parsing.module_id === selectedModule.id : true;
+      const providerMatch = selectedProvider === "all" ? true : parsing.provider.provider_name === selectedProvider;
+      return moduleMatch && providerMatch;
+    });
+
+  const handleModuleSelect = (module: Module) => {
+    // Toggle selection if clicking the same module
+    if (selectedModule?.id === module.id) {
+      setSelectedModule(null);
+    } else {
+      setSelectedModule(module);
+    }
+  };
+
+  const handleCheckBalance = async (moduleId: string) => {
+    const loadingToast = toast.loading("Checking balance...");
+    try {
+      const response = await apiRequest(`modules/${moduleId}/balance`, "GET");
+      if (response.success) {
+        toast.success("Balance updated successfully!", {
+          id: loadingToast,
+        });
+        // Update module balance in the list
+        setModules(modules.map(m => 
+          m.id === moduleId ? { ...m, balance: response.data.balance } : m
+        ));
+      } else {
+        toast.error("Failed to check balance.", {
+          id: loadingToast,
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to check balance.", {
+        id: loadingToast,
+      });
+    }
+  };
+
+  return (
+    <PageContainer>
+      <div className="h-full flex-1 space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">Modules</h2>
+            <Badge variant="outline" className="font-normal">
+              {modules.length} total
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowModules(!showModules)}>
+              {showModules ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-2" />
+                  Hide Modules
+                </>
               ) : (
-                <div className="space-y-2">
-                  {modules.map((module) => (
-                    <div key={module.id} className="flex items-center">
-                      <button
-                        onClick={() => {
-                          setSelectedModule(module);
-                          fetchParsings(module.id);
-                        }}
-                        className={`flex-1 text-left p-4 rounded-md transition-colors
-                          ${
-                            selectedModule?.id === module.id
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent/50"
-                          }`}
-                      >
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium leading-none">
-                              {module.module_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Balance: ₹{module.balance}
-                            </p>
-                          </div>
-                          <span className="text-xs font-medium rounded-md bg-secondary px-2.5 py-0.5">
-                            {module.response_group}
-                          </span>
-                        </div>
-                      </button>
-                      <div className="flex gap-1 mr-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedModule(module);
-                            setEditDialog(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500"
-                          onClick={() => {
-                            setSelectedModule(module);
-                            setDeleteDialog(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                <>
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Show Modules
+                </>
+              )}
+            </Button>
+            <Button onClick={() => setEditDialog(true)}>Add New Module</Button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* Modules Grid */}
+          <div className={`grid md:grid-cols-3 lg:grid-cols-4 gap-4 transition-all duration-300 ease-in-out ${
+            showModules ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+          }`}>
+            {modules.map(module => (
+              <Card 
+                key={module.id} 
+                className={`hover:shadow-md transition-all cursor-pointer relative overflow-hidden group ${
+                  selectedModule?.id === module.id 
+                    ? 'ring-2 ring-primary/50 bg-primary/5' 
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleModuleSelect(module)}
+              >
+                <div className="absolute top-0 right-0 w-[120px] h-[120px] -mr-8 -mt-8 bg-gradient-to-br from-primary/5 to-muted rounded-full transition-all group-hover:scale-110" />
+                
+                <CardHeader className="p-4 pb-2">
+                  <div className="flex items-center justify-between relative">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full transition-colors ${
+                          selectedModule?.id === module.id 
+                            ? 'bg-primary shadow-lg shadow-primary/25 animate-pulse' 
+                            : 'bg-muted-foreground/30'
+                        }`} />
+                        <CardTitle className="text-sm font-semibold">
+                          {module.module_name}
+                        </CardTitle>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Crown className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-[11px] text-muted-foreground font-medium">
+                          {module.response_group}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {selectedModule?.id === module.id && (
+                      <Badge variant="secondary" className="h-5 text-[10px] font-medium px-2 bg-primary/10 text-primary">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-4 pt-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold tracking-tight">₹{module.balance}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">Balance</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-1 pt-2 border-t border-dashed" onClick={e => e.stopPropagation()}>
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCheckBalance(module.id);
+                            }}
+                          >
+                            <ArrowUpCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Check Balance</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedModule(module);
+                              setParsingFormOpen(true);
+                            }}
+                          >
+                            <Router className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Add Parsing</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedModule(module);
+                              setEditDialog(true);
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit Module</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedModule(module);
+                              setDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete Module</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          {/* Right Panel - Parsings */}
-          <div className="h-full md:col-span-2 flex flex-col rounded-md border">
-            {selectedModule ? (
-              <>
-                <div className="p-6 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-medium">Parsing Settings</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Managing {selectedModule.module_name}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setSelectedParsing(null); // Reset selected parsing
-                          setParsingFormOpen(true);
-                        }}
-                      >
-                        Add Parsing
-                      </Button>
-                    </div>
-                  </div>
+          {/* Parsings Section */}
+          <Card className="mt-6">
+            <CardHeader className="p-4 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">
+                    {selectedModule 
+                      ? `${selectedModule.module_name} Parsings`
+                      : 'All Parsings'}
+                  </CardTitle>
+                  <Badge variant="outline" className="font-normal">
+                    {filteredParsings.length} total
+                  </Badge>
                 </div>
-
-                <div className="flex-1 overflow-hidden">
-                  <div className="h-full overflow-auto">
-                    <ParsingTable
-                      moduleId={selectedModule.id}
-                      data={parsings}
-                      onStatusChange={handleStatusChange}
-                      onEdit={(parsing) => {
-                        setSelectedParsing(parsing);
-                        setParsingFormOpen(true);
-                      }}
-                      onDelete={(parsing) => {
-                        setSelectedParsing(parsing);
-                        setDeleteParsingDialog(true);
-                      }}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="flex flex-col items-center text-center p-8">
-                  <Settings2 className="h-12 w-12 text-muted-foreground/40" />
-                  <h3 className="mt-4 text-lg font-medium">
-                    No Module Selected
-                  </h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Select a module from the left to manage its parsing settings
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={selectedProvider}
+                    onValueChange={setSelectedProvider}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue>
+                        {selectedProvider === "all" ? (
+                          "All Providers"
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage
+                                src={`/images/${uniqueProviders.find(p => p.provider_name === selectedProvider)?.provider_logo}`}
+                                alt={selectedProvider}
+                              />
+                              <AvatarFallback>{selectedProvider.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                            {selectedProvider}
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Providers</SelectItem>
+                      {uniqueProviders.map(provider => (
+                        <SelectItem 
+                          key={provider.provider_name} 
+                          value={provider.provider_name}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage
+                                src={`/images/${provider.provider_logo}`}
+                                alt={provider.provider_name}
+                              />
+                              <AvatarFallback>
+                                {provider.provider_name.substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {provider.provider_name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedModule && (
+                    <Button size="sm" className="h-8" onClick={() => setParsingFormOpen(true)}>
+                      Add Parsing
+                    </Button>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ParsingTable
+                moduleId={selectedModule?.id || ''}
+                data={filteredParsings}
+                modules={modules}
+                onStatusChange={handleStatusChange}
+                onEdit={parsing => {
+                  setSelectedModule(modules.find(m => m.id === parsing.module_id) || null);
+                  setSelectedParsing(parsing);
+                  setParsingFormOpen(true);
+                }}
+                onDelete={parsing => {
+                  setSelectedModule(modules.find(m => m.id === parsing.module_id) || null);
+                  setSelectedParsing(parsing);
+                  setDeleteParsingDialog(true);
+                }}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
 

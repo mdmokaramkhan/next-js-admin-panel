@@ -76,6 +76,11 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Height of the header plus some padding */
+}
+
 @layer utilities {
   .min-h-screen {
     min-height: 100vh; /* Fallback */
@@ -93,6 +98,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-y: auto;
   }
 }
 
