@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Wallet,
   BarChart3,
+  Settings
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageContainer from "@/components/page-container";
@@ -253,87 +254,186 @@ export default function Overview() {
   const renderServiceBreakdown = () => {
     const totalAmount = stats?.service_performance?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
     const totalTransactions = stats?.service_performance?.reduce((acc, curr) => acc + curr.transaction_count, 0) || 0;
-
+    const totalRevenue = stats?.service_performance?.reduce((acc, curr) => acc + (curr.total_revenue - curr.total_amount), 0) || 0;
+  
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle>Service Performance Breakdown</CardTitle>
-          <CardDescription>Transaction volume by service</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Service Performance</CardTitle>
+              <CardDescription>Transaction distribution by service type</CardDescription>
+            </div>
+            <Select defaultValue="amount">
+              <SelectTrigger className="h-8 w-[120px] text-xs">
+                <SelectValue placeholder="View by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="amount">By Amount</SelectItem>
+                <SelectItem value="transactions">By Transactions</SelectItem>
+                <SelectItem value="revenue">By Revenue</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="relative h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={formatServiceData(stats?.service_performance)}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                  strokeWidth={2}
-                  stroke="hsl(var(--background))"
-                >
-                  {formatServiceData(stats?.service_performance).map((_, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={COLORS[index % COLORS.length]}
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={formatServiceData(stats?.service_performance)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={4}
+                      dataKey="value"
+                      strokeWidth={2}
+                      stroke="hsl(var(--background))"
+                    >
+                      {formatServiceData(stats?.service_performance).map((_, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const service = stats?.service_performance?.find(
+                            s => s.service_name === payload[0].name
+                          );
+                          const percentage = ((service?.total_amount || 0) / totalAmount * 100).toFixed(1);
+                          const successRate = ((service?.transaction_count || 0) / (totalTransactions || 1) * 100).toFixed(1);
+                          return (
+                            <div className="rounded-lg border bg-background p-3 shadow-lg">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="h-2 w-2 rounded-full"
+                                  style={{ backgroundColor: payload[0].color }}
+                                />
+                                <span className="font-medium">{payload[0].name}</span>
+                              </div>
+                              <div className="mt-2 space-y-1.5">
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <span className="text-muted-foreground">Volume:</span>
+                                  <span className="font-medium text-right">₹{service?.total_amount.toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <span className="text-muted-foreground">Transactions:</span>
+                                  <span className="font-medium text-right">{service?.transaction_count} ({percentage}%)</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <span className="text-muted-foreground">Success Rate:</span>
+                                  <span className="font-medium text-right">{successRate}%</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <span className="text-muted-foreground">Revenue:</span>
+                                  <span className="font-medium text-right">₹{((service?.total_revenue || 0) - (service?.total_amount || 0)).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const service = stats?.service_performance?.find(
-                        s => s.service_name === payload[0].name
-                      );
-                      const percentage = ((service?.total_amount || 0) / totalAmount * 100).toFixed(1);
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-lg">
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-xl font-bold">₹{totalAmount.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Total Volume</p>
+                    <p className="text-sm mt-1">{totalTransactions} transactions</p>
+                  </div>
+                </div>
+              </div>
+    
+              <ScrollArea className="h-[280px]">
+                <div className="space-y-4">
+                  {stats?.service_performance?.map((service, index) => {
+                    const percentage = (service.total_amount / totalAmount * 100);
+                    return (
+                      <div key={service.service_name} className="group">
+                        <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <div 
                               className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: payload[0].color }}
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
                             />
-                            <span className="font-medium">{payload[0].name}</span>
+                            <span className="text-sm font-medium">{service.service_name}</span>
                           </div>
-                          <div className="mt-1 space-y-1 text-xs text-muted-foreground">
-                            <p>Volume: ₹{service?.total_amount.toLocaleString()}</p>
-                            <p>{service?.transaction_count} transactions ({percentage}%)</p>
-                          </div>
+                          <span className="text-sm">
+                            ₹{service.total_amount.toLocaleString()}
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({percentage.toFixed(1)}%)
+                            </span>
+                          </span>
                         </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Centered text */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-xl font-bold">₹{totalAmount.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">{totalTransactions} txns</p>
+                        <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                          <div 
+                            className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 group-hover:opacity-80"
+                            style={{ 
+                              width: `${percentage}%`,
+                              backgroundColor: COLORS[index % COLORS.length]
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                          <span>{service.transaction_count} transactions</span>
+                          <span>Revenue: ₹{(service.total_revenue - service.total_amount).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+  
+            {/* Replace the old bottom section with this new compact version */}
+            <div className="pt-4 border-t">
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  {
+                    label: "Most Used",
+                    value: stats?.service_performance?.[0]?.service_name || "-",
+                    subValue: `${((stats?.service_performance?.[0]?.transaction_count || 0) / totalTransactions * 100).toFixed(1)}%`,
+                    color: COLORS[0]
+                  },
+                  {
+                    label: "Highest Volume",
+                    value: `₹${stats?.service_performance?.sort((a, b) => b.total_amount - a.total_amount)[0]?.total_amount.toLocaleString() || 0}`,
+                    subValue: stats?.service_performance?.sort((a, b) => b.total_amount - a.total_amount)[0]?.service_name || "-",
+                    color: COLORS[1]
+                  },
+                  {
+                    label: "Best Revenue",
+                    value: `₹${((stats?.service_performance?.sort((a, b) => (b.total_revenue - b.total_amount) - (a.total_revenue - a.total_amount))[0]?.total_revenue || 0) - (stats?.service_performance?.sort((a, b) => (b.total_revenue - b.total_amount) - (a.total_revenue - a.total_amount))[0]?.total_amount || 0)).toFixed(2)}`,
+                    subValue: stats?.service_performance?.sort((a, b) => (b.total_revenue - b.total_amount) - (a.total_revenue - a.total_amount))[0]?.service_name || "-",
+                    color: COLORS[2]
+                  },
+                  {
+                    label: "Total Services",
+                    value: stats?.service_performance?.length || 0,
+                    subValue: `${totalTransactions.toLocaleString()} txns`,
+                    color: COLORS[3]
+                  }
+                ].map((stat, i) => (
+                  <div 
+                    key={i} 
+                    className="relative rounded-lg bg-muted/50 p-3 overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: stat.color }} />
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    <p className="text-sm font-medium mt-1 truncate">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{stat.subValue}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-          {/* Legend */}
-          <div className="mt-4 space-y-1">
-            {stats?.service_performance?.map((service, index) => (
-              <div key={service.service_name} className="flex items-center gap-2">
-                <div 
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
-                <span className="text-sm">
-                  {service.service_name}
-                  <span className="text-xs text-muted-foreground ml-2">
-                    ({((service.total_amount / totalAmount) * 100).toFixed(0)}%)
-                  </span>
-                </span>
-              </div>
-            ))}
           </div>
         </CardContent>
       </Card>
@@ -1074,6 +1174,91 @@ export default function Overview() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Add this new section at the bottom */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Recent System Events</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {[
+                    { type: "success", message: "System balance updated successfully", time: "2 mins ago" },
+                    { type: "warning", message: "Provider API latency detected", time: "15 mins ago" },
+                    { type: "error", message: "Failed transaction retry attempt", time: "1 hour ago" },
+                    { type: "info", message: "Automated daily report generated", time: "2 hours ago" },
+                  ].map((event, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <div className={cn(
+                        "h-2 w-2 rounded-full",
+                        event.type === "success" && "bg-emerald-500",
+                        event.type === "warning" && "bg-yellow-500",
+                        event.type === "error" && "bg-rose-500",
+                        event.type === "info" && "bg-blue-500"
+                      )} />
+                      <span className="flex-1">{event.message}</span>
+                      <span className="text-xs text-muted-foreground">{event.time}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Add Money", icon: <Wallet className="h-4 w-4" /> },
+                      { label: "View Reports", icon: <BarChart3 className="h-4 w-4" /> },
+                      { label: "Users", icon: <Users className="h-4 w-4" /> },
+                      { label: "Settings", icon: <Settings className="h-4 w-4" /> }
+                    ].map((action, i) => (
+                      <Button key={i} variant="outline" className="h-12 justify-start gap-2">
+                        {action.icon}
+                        {action.label}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">System Health</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[
+                    { label: "API Response Time", value: "280ms", target: "< 300ms" },
+                    { label: "Success Rate", value: "99.2%", target: "> 98%" },
+                    { label: "System Load", value: "42%", target: "< 75%" },
+                    { label: "Memory Usage", value: "3.2GB", target: "< 4GB" }
+                  ].map((metric, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{metric.label}</span>
+                        <span className="font-medium">{metric.value}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all"
+                          style={{ 
+                            width: `${parseInt(metric.value) || 0}%`,
+                            backgroundColor: parseInt(metric.value) > 90 
+                              ? 'hsl(var(--destructive))' 
+                              : parseInt(metric.value) > 75 
+                              ? 'hsl(var(--warning))' 
+                              : 'hsl(var(--primary))'
+                          }} 
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Target: {metric.target}</p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>

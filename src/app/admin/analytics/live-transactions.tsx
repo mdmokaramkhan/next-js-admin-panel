@@ -17,7 +17,7 @@ import {
 
 // Types
 interface MessageItem {
-  type: 'status' | 'transaction';
+  type: 'status' | 'transaction' | 'request';
   timestamp: string;
   message: string;
   data?: any;
@@ -88,6 +88,7 @@ export default function LiveTransactions() {
       connect: () => {
         setConnectionStatus('Connected');
         addMessage('status', 'Socket connected');
+        emitWithLog('getLoading'); // Add this line to request pending transactions on connect
       },
       connect_error: (error: Error) => {
         setConnectionStatus('Connection Error');
@@ -110,6 +111,28 @@ export default function LiveTransactions() {
             ? filtered.map((t, i) => i === existingIndex ? transaction : t)
             : [transaction, ...filtered];
         });
+      },
+      'pendingTransactions': (pendingTransactions: Transaction[]) => {
+        addMessage('status', `Received ${pendingTransactions.length} pending transactions`);
+        setTransactions(prev => {
+          const updatedTransactions = [...prev];
+          
+          pendingTransactions.forEach(newTransaction => {
+            const existingIndex = updatedTransactions.findIndex(t => t.id === newTransaction.id);
+            if (existingIndex >= 0) {
+              // Update existing transaction
+              updatedTransactions[existingIndex] = newTransaction;
+            } else {
+              // Add new transaction
+              updatedTransactions.unshift(newTransaction);
+            }
+          });
+
+          // Filter out completed transactions and keep only the most recent ones
+          return updatedTransactions
+            .filter(t => t.status < 10)
+            .slice(0, 100); // Optional: limit to last 100 transactions
+        });
       }
     };
 
@@ -117,6 +140,11 @@ export default function LiveTransactions() {
     Object.entries(eventHandlers).forEach(([event, handler]) => {
       newSocket.on(event, handler);
     });
+
+    const emitWithLog = (eventName: string, data?: any) => {
+      addMessage('status', `Sent ${eventName} request`, data);
+      newSocket.emit(eventName, data);
+    };
 
     setSocket(newSocket);
     return newSocket;
@@ -131,6 +159,13 @@ export default function LiveTransactions() {
     initializeSocket();
     addMessage('status', 'Manual reconnection initiated');
   }, [socket, initializeSocket]);
+
+  const handleLoadPendings = useCallback(() => {
+    if (socket) {
+      socket.emit('getLoading');
+      addMessage('status', 'Sent getLoading request', { timestamp: new Date().toISOString() });
+    }
+  }, [socket]);
 
   useEffect(() => {
     const socket = initializeSocket();
@@ -185,6 +220,15 @@ export default function LiveTransactions() {
               <RefreshCcw size={16} />
               Reconnect
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLoadPendings}
+              className="flex items-center gap-2"
+            >
+              <RefreshCcw size={16} />
+              Refresh
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button
@@ -218,7 +262,11 @@ export default function LiveTransactions() {
                             msg.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
                           ) : null}
                           <span className={`px-2 py-0.5 rounded-full text-xs ${
-                            msg.type === 'status' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                            msg.type === 'status' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : msg.type === 'request'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-green-100 text-green-700'
                           }`}>
                             {msg.type}
                           </span>
