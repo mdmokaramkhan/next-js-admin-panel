@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import PageContainer from "@/components/page-container";
 import { Button } from "@/components/ui/button";
-import { Settings2, Pencil, Trash2, Check, ArrowUpCircle, Router, Crown, ChevronDown, ChevronUp } from "lucide-react";
+import { Pencil, Trash2, ArrowUpCircle, Router, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -144,19 +144,20 @@ export default function Overview() {
   const handleStatusChange = async (id: string, status: boolean) => {
     const loadingToast = toast.loading("Updating status...");
     try {
-      if (!selectedModule?.id) {
-        throw new Error("Invalid module ID");
-      }
-
       const parsing = parsings.find((p) => p.id === id);
       if (!parsing) {
         throw new Error("Parsing not found");
       }
 
+      let moduleId = selectedModule?.id;
+      if (!moduleId) {
+        moduleId = parsing.module_id;
+      }
+
       const updateData = {
         id: parsing.id,
         status,
-        module_id: parseInt(selectedModule.id, 10),
+        module_id: parseInt(moduleId, 10),
         provider_code: parsing.provider_code,
         parsing: parsing.parsing,
       };
@@ -203,9 +204,14 @@ export default function Overview() {
 
   const handleUpdateParsing = async (data: Partial<Parsing>) => {
     try {
+      let moduleId = selectedModule?.id;
+      if (!moduleId) {
+        moduleId = data.module_id;
+      }
+
       const parsingData = {
         ...data,
-        module_id: selectedModule?.id,
+        module_id: moduleId,
       };
       const response = await apiRequest(`/parsings/${selectedParsing?.id}`, "PUT", parsingData);
 
@@ -239,7 +245,6 @@ export default function Overview() {
   );
 
   // Get unique providers from parsings
-  const providers = Array.from(new Set(parsings.map(p => p.provider.provider_name)));
 
   // Get unique providers with their full details
   const uniqueProviders = Array.from(
@@ -285,7 +290,7 @@ export default function Overview() {
           id: loadingToast,
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to check balance.", {
         id: loadingToast,
       });
