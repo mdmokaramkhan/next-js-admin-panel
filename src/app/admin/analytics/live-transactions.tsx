@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import io, { Socket } from "socket.io-client";
 import { DataTable } from "./data-table";
-import { ChevronDown, ChevronRight, RefreshCcw, History } from "lucide-react";
+import { ChevronDown, ChevronRight, RefreshCcw, History, RotateCcw } from "lucide-react";
 import { Transaction, transactionColumns } from "./columns";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -217,7 +217,7 @@ export default function LiveTransactions() {
               onClick={handleReconnect}
               className="flex items-center gap-2"
             >
-              <RefreshCcw size={16} />
+              <RotateCcw size={16} />
               Reconnect
             </Button>
             <Button

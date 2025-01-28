@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Send, UserPlus, Wallet, RefreshCcw } from "lucide-react"; // Add Wallet and RefreshCcw icons
+import { Send, UserPlus, RefreshCcw } from "lucide-react"; // Add Wallet and RefreshCcw icons
 import PageContainer from "@/components/page-container";
 import { Separator } from "@/components/ui/separator";
 import { Heading } from "@/components/ui/heading";

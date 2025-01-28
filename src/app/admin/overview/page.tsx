@@ -254,7 +254,7 @@ export default function Overview() {
   const renderServiceBreakdown = () => {
     const totalAmount = stats?.service_performance?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
     const totalTransactions = stats?.service_performance?.reduce((acc, curr) => acc + curr.transaction_count, 0) || 0;
-    const totalRevenue = stats?.service_performance?.reduce((acc, curr) => acc + (curr.total_revenue - curr.total_amount), 0) || 0;
+    // const totalRevenue = stats?.service_performance?.reduce((acc, curr) => acc + (curr.total_revenue - curr.total_amount), 0) || 0;
   
     return (
       <Card>
@@ -346,7 +346,6 @@ export default function Overview() {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <p className="text-xl font-bold">₹{totalAmount.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">Total Volume</p>
                     <p className="text-sm mt-1">{totalTransactions} transactions</p>
                   </div>
                 </div>
