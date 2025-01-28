@@ -111,7 +111,9 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
         <form onSubmit={(e) => {
           e.preventDefault();
           onSubmit({
-            amount: parseFloat(formData.amount),
+            amount: isReverseTransfer
+              ? parseFloat(formData.amount) * -1
+              : parseFloat(formData.amount),
             receiptMobileNumber: formData.receiptMobileNumber,
             targetWallet: formData.targetWallet,
           });

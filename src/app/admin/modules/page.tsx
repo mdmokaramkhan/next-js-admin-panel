@@ -76,7 +76,10 @@ export default function Overview() {
   const [selectedParsing, setSelectedParsing] = useState<Parsing | null>(null);
   const [deleteParsingDialog, setDeleteParsingDialog] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
-  const [showModules, setShowModules] = useState(true);
+  const [showModules, setShowModules] = useState(false);
+  const [checkBalanceDialogOpen, setCheckBalanceDialogOpen] = useState(false);
+  const [balanceResponseStatus, setBalanceResponseStatus] = useState(false);
+  const [balanceResponseMessage, setBalanceResponseMessage] = useState("");
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -278,22 +281,15 @@ export default function Overview() {
     try {
       const response = await apiRequest(`modules/${moduleId}/balance`, "GET");
       if (response.success) {
-        toast.success("Balance updated successfully!", {
-          id: loadingToast,
-        });
-        // Update module balance in the list
-        setModules(modules.map(m => 
-          m.id === moduleId ? { ...m, balance: response.data.balance } : m
-        ));
+        toast.success("Balance updated successfully!", { id: loadingToast });
+        setBalanceResponseStatus(response.data.balanceResponse.status);
+        setBalanceResponseMessage(response.data.balanceResponse.message);
+        setCheckBalanceDialogOpen(true);
       } else {
-        toast.error("Failed to check balance.", {
-          id: loadingToast,
-        });
+        toast.error("Failed to check balance.", { id: loadingToast });
       }
     } catch {
-      toast.error("Failed to check balance.", {
-        id: loadingToast,
-      });
+      toast.error("Failed to check balance.", { id: loadingToast });
     }
   };
 
@@ -651,6 +647,20 @@ export default function Overview() {
             <AlertDialogAction onClick={handleDeleteParsing}>
               Delete
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={checkBalanceDialogOpen} onOpenChange={setCheckBalanceDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Balance</AlertDialogTitle>
+            <AlertDialogDescription>
+              Status: {balanceResponseStatus ? "true" : "false"} - {balanceResponseMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

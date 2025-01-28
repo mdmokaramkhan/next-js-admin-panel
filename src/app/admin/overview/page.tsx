@@ -533,8 +533,7 @@ export default function Overview() {
               <div className="flex items-center gap-2">
                 <TabsList className="w-full sm:w-auto">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="live-transactions">Live</TabsTrigger>
-                  <TabsTrigger value="reports">Reports</TabsTrigger>
+                  <TabsTrigger value="live-transactions">Live Transactions</TabsTrigger>
                 </TabsList>
                 
                 <Button
@@ -1266,11 +1265,6 @@ export default function Overview() {
           <TabsContent value="live-transactions" className="space-y-4">
             <div className="grid gap-4">
               <LiveTransactions />
-            </div>
-          </TabsContent>
-          <TabsContent value="reports" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Reports content will go here */}
             </div>
           </TabsContent>
         </Tabs>
