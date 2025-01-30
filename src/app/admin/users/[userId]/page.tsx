@@ -79,7 +79,7 @@ export default function UserDetailsPage({ params }: PageProps) {
   });
 
   // Tab state
-  const [activeTab, setActiveTab] = useState("transactions");
+  const [activeTab, setActiveTab] = useState("overview");
   const [tabLoading, setTabLoading] = useState(false);
 
   // Initialize date state as null initially
@@ -184,7 +184,7 @@ export default function UserDetailsPage({ params }: PageProps) {
               break;
           }
         }
-      } catch (error) {
+      } catch {
         toast.error(`Failed to fetch ${activeTab}`);
       } finally {
         setTabLoading(false);
@@ -192,7 +192,7 @@ export default function UserDetailsPage({ params }: PageProps) {
     };
 
     fetchData();
-  }, [activeTab, userData?.mobile_number, date.from, date.to]);
+  }, [activeTab, userData?.mobile_number, userData?.id, date.from, date.to]);
 
   // Transfer money handlers
   const handleSendMoney = (wallet = "rch_bal") => {
@@ -332,326 +332,320 @@ export default function UserDetailsPage({ params }: PageProps) {
         </div>
         <Separator />
 
-        {/* User information cards */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>
-                User's personal and shop details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Owner Name
-                  </p>
-                  <p>{userData.owner_name || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Shop Name
-                  </p>
-                  <p>{userData.shop_name || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Email
-                  </p>
-                  <p>{userData.email_address}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Phone
-                  </p>
-                  <p>+91 {userData.mobile_number}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Address
-                  </p>
-                  <p>{userData.address || "N/A"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Account Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Status</CardTitle>
-              <CardDescription>Current account information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </p>
-                  <Badge variant={userData.status ? "default" : "destructive"}>
-                    {userData.status ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Role
-                  </p>
-                  <Badge variant="outline">
-                    {userData.groupDetails?.group_name}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    KYC Status
-                  </p>
-                  <Badge
-                    variant={userData.isVerified ? "default" : "secondary"}
-                  >
-                    {userData.isVerified ? "Verified" : "Pending"}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Created At
-                  </p>
-                  <p>{format(new Date(userData.createdAt), "PPP")}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Modified Wallet Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Wallet Information</CardTitle>
-              <CardDescription>
-                Balance and minimum balance details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Recharge Balance
-                    </p>
-                    <p className="text-2xl font-bold">
-                      ₹{userData.rch_bal.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Min: ₹{userData.rch_min_bal.toLocaleString()}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendMoney("rch_bal")}
-                      className="w-full mt-2"
-                    >
-                      <SendHorizontal className="w-4 h-4 mr-2" />
-                      Send to Recharge
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Utility Balance
-                    </p>
-                    <p className="text-2xl font-bold">
-                      ₹{userData.utility_bal.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Min: ₹{userData.utility_min_bal.toLocaleString()}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendMoney("utility_bal")}
-                      className="w-full mt-2"
-                    >
-                      <SendHorizontal className="w-4 h-4 mr-2" />
-                      Send to Utility
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      DMT Balance
-                    </p>
-                    <p className="text-2xl font-bold">
-                      ₹{userData.dmt_bal.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Min: ₹{userData.dmt_min_bal.toLocaleString()}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendMoney("dmt_bal")}
-                      className="w-full mt-2"
-                    >
-                      <SendHorizontal className="w-4 h-4 mr-2" />
-                      Send to DMT
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Additional Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
-              <CardDescription>Other user details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Callback URL
-                  </p>
-                  <p className="break-all">
-                    {userData.callback_url || "Not set"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Last IP Address
-                  </p>
-                  <p>{userData.ip_address || "Not available"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Failed Login Attempts
-                  </p>
-                  <p>{userData.failedLoginAttempts}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Last Updated
-                  </p>
-                  <p>{format(new Date(userData.updatedAt), "PPP")}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs section */}
-        <div className="mt-6">
-          <Tabs
-            defaultValue="transactions"
-            value={activeTab}
-            onValueChange={setActiveTab}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <TabsList>
-                <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                <TabsTrigger value="statements">Statements</TabsTrigger>
-                <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
-              </TabsList>
-              {/* Date range picker */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant={"outline"}
-                    className={cn(
-                      "w-[300px] justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon />
-                    {date?.from ? (
-                      date.to ? (
-                        <>
-                          {format(date.from, "LLL dd, y")} -{" "}
-                          {format(date.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(date.from, "LLL dd, y")
-                      )
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex items-center gap-2">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+              <TabsTrigger value="statements">Statements</TabsTrigger>
+              <TabsTrigger value="login-logs">Login Logs</TabsTrigger>
+            </TabsList>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "ml-auto w-[300px] justify-start text-left",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon />
+                  {date?.from ? (
+                    date.to ? (
+                      <>
+                        {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
+                      </>
                     ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={date?.from}
-                    selected={date}
-                    onSelect={(range) => setDate({ from: range?.from, to: range?.to })}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+                      format(date.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-0">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={(range) => setDate({ from: range?.from, to: range?.to })}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-            <TabsContent value="transactions">
+          <TabsContent value="overview">
+            {/* Place user details and wallet info here */}
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Basic Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Transactions History</CardTitle>
+                  <CardTitle>Basic Information</CardTitle>
                   <CardDescription>
-                    View all transactions made by this user
+                    User's personal and shop details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Owner Name
+                      </p>
+                      <p>{userData.owner_name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Shop Name
+                      </p>
+                      <p>{userData.shop_name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Email
+                      </p>
+                      <p>{userData.email_address}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Phone
+                      </p>
+                      <p>+91 {userData.mobile_number}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Address
+                      </p>
+                      <p>{userData.address || "N/A"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Account Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Status</CardTitle>
+                  <CardDescription>Current account information</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Status
+                      </p>
+                      <Badge variant={userData.status ? "default" : "destructive"}>
+                        {userData.status ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Role
+                      </p>
+                      <Badge variant="outline">
+                        {userData.groupDetails?.group_name}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        KYC Status
+                      </p>
+                      <Badge
+                        variant={userData.isVerified ? "default" : "secondary"}
+                      >
+                        {userData.isVerified ? "Verified" : "Pending"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Created At
+                      </p>
+                      <p>{format(new Date(userData.createdAt), "PPP")}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Additional Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Information</CardTitle>
+                  <CardDescription>Other user details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Callback URL
+                      </p>
+                      <p className="break-all">
+                        {userData.callback_url || "Not set"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Last IP Address
+                      </p>
+                      <p>{userData.ip_address || "Not available"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Failed Login Attempts
+                      </p>
+                      <p>{userData.failedLoginAttempts}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Last Updated
+                      </p>
+                      <p>{format(new Date(userData.updatedAt), "PPP")}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Modified Wallet Information Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Wallet Information</CardTitle>
+                  <CardDescription>
+                    Balance and minimum balance details
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {tabLoading ? (
-                    <TabLoadingSkeleton />
-                  ) : (
-                    <DataTable
-                      columns={transactionColumns}
-                      data={transactions}
-                      searchKey="number"
-                    />
-                  )}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Recharge Balance
+                        </p>
+                        <p className="text-2xl font-bold">
+                          ₹{userData.rch_bal.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Min: ₹{userData.rch_min_bal.toLocaleString()}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSendMoney("rch_bal")}
+                          className="w-full mt-2"
+                        >
+                          <SendHorizontal className="w-4 h-4 mr-2" />
+                          Send to Recharge
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Utility Balance
+                        </p>
+                        <p className="text-2xl font-bold">
+                          ₹{userData.utility_bal.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Min: ₹{userData.utility_min_bal.toLocaleString()}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSendMoney("utility_bal")}
+                          className="w-full mt-2"
+                        >
+                          <SendHorizontal className="w-4 h-4 mr-2" />
+                          Send to Utility
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          DMT Balance
+                        </p>
+                        <p className="text-2xl font-bold">
+                          ₹{userData.dmt_bal.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Min: ₹{userData.dmt_min_bal.toLocaleString()}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSendMoney("dmt_bal")}
+                          className="w-full mt-2"
+                        >
+                          <SendHorizontal className="w-4 h-4 mr-2" />
+                          Send to DMT
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
+          </TabsContent>
 
-            <TabsContent value="statements">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Statements</CardTitle>
-                  <CardDescription>View user's account statements and balance history</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {tabLoading ? (
-                    <TabLoadingSkeleton />
-                  ) : (
-                    <DataTable
-                      columns={statementColumns}
-                      data={statements}
-                      searchKey="description"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="login-logs">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Login History</CardTitle>
-                  <CardDescription>View user's login activity</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {tabLoading ? (
-                    <TabLoadingSkeleton />
-                  ) : (
-                    <DataTable
-                      columns={loginInfoColumns}
-                      data={loginInfo}
-                      searchKey="ip_address"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="transactions">
+            {/* Transactions content */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Transactions History</CardTitle>
+                <CardDescription>
+                  View all transactions made by this user
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <TabLoadingSkeleton />
+                ) : (
+                  <DataTable
+                    columns={transactionColumns}
+                    data={transactions}
+                    searchKey="number"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="statements">
+            {/* Statements content */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Statements</CardTitle>
+                <CardDescription>View user's account statements and balance history</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <TabLoadingSkeleton />
+                ) : (
+                  <DataTable
+                    columns={statementColumns}
+                    data={statements}
+                    searchKey="description"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="login-logs">
+            {/* Login logs content */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Login History</CardTitle>
+                <CardDescription>View user's login activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tabLoading ? (
+                  <TabLoadingSkeleton />
+                ) : (
+                  <DataTable
+                    columns={loginInfoColumns}
+                    data={loginInfo}
+                    searchKey="ip_address"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Transfer money dialog */}
         <TransferMoneyDialog
