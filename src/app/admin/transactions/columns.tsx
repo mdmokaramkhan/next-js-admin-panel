@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/context-menu";
 import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export type Transaction = {
   id?: number;
@@ -290,20 +291,29 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
         : null;
 
       return (
-        <div className="grid grid-cols-[auto,1fr] gap-2 items-center">
-          <Avatar>
-            <AvatarImage
-              src={logoPath || undefined}
-              alt={row.original.providerDetails?.provider_name || "Provider"}
-            />
-            <AvatarFallback>
-              {row.original.providerDetails?.provider_name
-                ?.substring(0, 2)
-                .toUpperCase() || "PT"}
-            </AvatarFallback>
-          </Avatar>
-          {row.original.providerDetails?.provider_name}
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              title={row.original.providerDetails?.provider_name || "Provider"}
+              className="grid grid-cols-[auto,1fr] gap-2 items-center"
+            >
+              <Avatar>
+                <AvatarImage
+                  src={logoPath || undefined}
+                  alt={row.original.providerDetails?.provider_name || "Provider"}
+                />
+                <AvatarFallback>
+                  {row.original.providerDetails?.provider_name
+                    ?.substring(0, 2)
+                    .toUpperCase() || "PT"}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            {row.original.providerDetails?.provider_name || "Provider"}
+          </TooltipContent>
+        </Tooltip>
       );
     },
   },
@@ -360,7 +370,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     header: "Module Details",
     cell: ({ row }) => (
       <div className="space-y-1 text-sm">
-        <p className="font-medium columns">
+        <div className="font-medium columns">
           <span className="text-nowrap">
             {row.original.moduleDetails?.module_name ?? "N/A"}
           </span>
@@ -370,7 +380,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
           >
             {row.original.lapu_id ?? "N/A"}
           </Badge>
-        </p>
+        </div>
         <p className="text-xs text-nowrap text-muted-foreground">
           Lapu Bal:{" "}
           {row.original.moduleDetails
