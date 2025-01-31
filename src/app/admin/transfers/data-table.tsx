@@ -32,12 +32,12 @@ export function DataTable<TData extends Transfer, TValue>({
   const [searchFilters, setSearchFilters] = useState({
     from_shop: '',
     from_mobile: '',
-    to_shop: '',
+    to_mobile: '',
   });
   const [activeFilters, setActiveFilters] = useState({
     from_shop: '',
     from_mobile: '',
-    to_shop: '',
+    to_mobile: '',
   });
 
   const handleSearchChange = (field: keyof typeof searchFilters) => (
@@ -67,7 +67,7 @@ export function DataTable<TData extends Transfer, TValue>({
         return false;
       }
       
-      if (activeFilters.to_shop && !transfer.end_shop_name.toLowerCase().includes(activeFilters.to_shop.toLowerCase())) {
+      if (activeFilters.to_mobile && !String(transfer.end_mobile_number).includes(activeFilters.to_mobile)) {
         return false;
       }
       
@@ -79,12 +79,12 @@ export function DataTable<TData extends Transfer, TValue>({
     setSearchFilters({
       from_shop: '',
       from_mobile: '',
-      to_shop: '',
+      to_mobile: '',
     });
     setActiveFilters({
       from_shop: '',
       from_mobile: '',
-      to_shop: '',
+      to_mobile: '',
     });
   };
 
@@ -120,11 +120,11 @@ export function DataTable<TData extends Transfer, TValue>({
           </div>
 
           <div className="relative">
-            <Store className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <PhoneCall className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by to shop name..."
-              value={searchFilters.to_shop}
-              onChange={handleSearchChange('to_shop')}
+              placeholder="Search by to mobile number..."
+              value={searchFilters.to_mobile}
+              onChange={handleSearchChange('to_mobile')}
               className="pl-8 w-full"
             />
           </div>
