@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Search, User, PhoneCall, Store } from "lucide-react";
+import { Search, User, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ColumnDef,

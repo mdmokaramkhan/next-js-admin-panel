@@ -108,6 +108,26 @@ export const getStatusInfo = (status: number) => {
   );
 };
 
+const CompareValue = ({ before, after }: { before: string | null, after: string | null }) => (
+  <div className="flex items-center gap-1.5 text-xs">
+    <span className="bg-gray-100 px-1.5 py-0.5 rounded min-w-[60px] text-center">
+      {before || 'N/A'}
+    </span>
+    <span className="text-gray-400">→</span>
+    <span className={`px-1.5 py-0.5 rounded min-w-[60px] text-center ${before !== after ? 'bg-blue-50 text-blue-700' : 'bg-gray-100'}`}>
+      {after || 'N/A'}
+    </span>
+  </div>
+);
+
+const SimpleValue = ({ value }: { value: string | null }) => (
+  <div className="text-xs">
+    <span className="bg-gray-100 px-1.5 py-0.5 rounded">
+      {value || 'N/A'}
+    </span>
+  </div>
+);
+
 export const columns: ColumnDef<ResponseGroup>[] = [
   {
     id: "select",
@@ -134,52 +154,54 @@ export const columns: ColumnDef<ResponseGroup>[] = [
   },
   {
     header: "Required Text",
-    accessorKey: "txt_required",
+    cell: ({ row }) => (
+      <SimpleValue value={row.original.txt_required} />
+    ),
   },
   {
-    header: "Not Required Text",
-    accessorKey: "txt_not_required",
-    cell: ({ row }) => row.getValue("txt_not_required") || "N/A",
+    header: "Not Required",
+    cell: ({ row }) => (
+      <SimpleValue value={row.original.txt_not_required} />
+    ),
   },
   {
-    header: "Before Number",
-    accessorKey: "txt_b_number",
+    header: "Number",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_number}
+        after={row.original.txt_a_number}
+      />
+    ),
   },
   {
-    header: "After Number",
-    accessorKey: "txt_a_number",
+    header: "Amount",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_amount}
+        after={row.original.txt_a_amount}
+      />
+    ),
   },
   {
-    header: "Before Amount",
-    accessorKey: "txt_b_amount",
+    header: "SN",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_sn}
+        after={row.original.txt_a_sn}
+      />
+    ),
   },
   {
-    header: "After Amount",
-    accessorKey: "txt_a_amount",
+    header: "RefID",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_refid}
+        after={row.original.txt_a_refid}
+      />
+    ),
   },
   {
-    header: "Before SN",
-    accessorKey: "txt_b_sn",
-    cell: ({ row }) => row.getValue("txt_b_sn") || "N/A",
-  },
-  {
-    header: "After SN",
-    accessorKey: "txt_a_sn",
-    cell: ({ row }) => row.getValue("txt_a_sn") || "N/A",
-  },
-  {
-    header: "Before RefID",
-    accessorKey: "txt_b_refid",
-    cell: ({ row }) => row.getValue("txt_b_refid") || "N/A",
-  },
-  {
-    header: "After RefID",
-    accessorKey: "txt_a_refid",
-    cell: ({ row }) => row.getValue("txt_a_refid") || "N/A",
-  },
-  {
-    header: "Status Code",
-    accessorKey: "status_code",
+    header: "Status",
     cell: ({ row }) => {
       const status = row.original.status_code;
       const statusInfo = getStatusInfo(status);
@@ -194,32 +216,31 @@ export const columns: ColumnDef<ResponseGroup>[] = [
     }
   },
   {
-    header: "Before Module Balance",
-    accessorKey: "txt_b_module_bal",
+    header: "Balance",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_module_bal}
+        after={row.original.txt_a_module_bal}
+      />
+    ),
   },
   {
-    header: "After Module Balance",
-    accessorKey: "txt_a_module_bal",
+    header: "LAPU ID",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_lapu_id}
+        after={row.original.txt_a_lapu_id}
+      />
+    ),
   },
   {
-    header: "Before LAPU ID",
-    accessorKey: "txt_b_lapu_id",
-    cell: ({ row }) => row.getValue("txt_b_lapu_id") || "N/A",
-  },
-  {
-    header: "After LAPU ID",
-    accessorKey: "txt_a_lapu_id",
-    cell: ({ row }) => row.getValue("txt_a_lapu_id") || "N/A",
-  },
-  {
-    header: "Before Roffer",
-    accessorKey: "txt_b_roffer",
-    cell: ({ row }) => row.getValue("txt_b_roffer") || "N/A",
-  },
-  {
-    header: "After Roffer",
-    accessorKey: "txt_a_roffer",
-    cell: ({ row }) => row.getValue("txt_a_roffer") || "N/A",
+    header: "Roffer",
+    cell: ({ row }) => (
+      <CompareValue 
+        before={row.original.txt_b_roffer}
+        after={row.original.txt_a_roffer}
+      />
+    ),
   },
   {
     header: "Actions",
