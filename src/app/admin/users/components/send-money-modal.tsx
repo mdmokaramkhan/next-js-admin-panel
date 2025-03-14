@@ -18,9 +18,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Send, Loader2, User as UserIcon, IndianRupee, ArrowRight } from "lucide-react";
+import { Wallet, Send, Loader2, User as UserIcon, IndianRupee, ArrowRight, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
@@ -103,11 +103,12 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild><div /></DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] p-0 max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[95vw] md:max-w-[900px] p-0 max-h-[90vh] overflow-hidden bg-background/95 backdrop-blur-sm">
         <DialogHeader className="sr-only">
-          <DialogTitle>Transfer Money</DialogTitle>
+          <DialogTitle>
+            {isReverseTransfer ? "Withdraw Money" : "Transfer Money"}
+          </DialogTitle>
         </DialogHeader>
-        
         <form onSubmit={(e) => {
           e.preventDefault();
           onSubmit({
@@ -118,23 +119,27 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
             targetWallet: formData.targetWallet,
           });
         }} className="flex flex-col h-full">
-          <div className="p-6 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-background">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-3xl font-bold flex items-center gap-3">
-                  <Send className={cn("w-8 h-8 text-primary transition-transform", 
-                    isReverseTransfer && "rotate-180")} />
-                  Money Transfer
+          {/* Header Section */}
+          <div className="px-6 py-5 border-b bg-gradient-to-r from-background via-muted/50 to-background relative overflow-hidden">
+            <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,transparent,black)] dark:bg-grid-black/5" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <h2 className="text-2xl font-semibold flex items-center gap-3 text-foreground/90">
+                  <div className="p-2 rounded-full bg-primary/10 shadow-inner">
+                    <Send className={cn("w-5 h-5 text-primary transition-transform", 
+                      isReverseTransfer && "rotate-180")} />
+                  </div>
+                  {isReverseTransfer ? "Withdraw Money" : "Transfer Money"}
                 </h2>
-                <p className="text-muted-foreground mt-2 text-base">
+                <p className="text-muted-foreground text-sm mt-1.5">
                   {isReverseTransfer 
-                    ? "Withdraw money from user's wallet"
-                    : "Send money to user's wallet safely and instantly"
+                    ? "Securely withdraw funds from user's wallet"
+                    : "Instantly transfer money to user's wallet"
                   }
                 </p>
               </div>
-              <div className="flex items-center gap-3 bg-background/50 p-3 rounded-lg backdrop-blur-sm">
-                <Label htmlFor="transfer-mode" className="text-sm font-medium">Reverse Transfer</Label>
+              <div className="flex items-center gap-3 bg-card/50 p-2.5 rounded-full backdrop-blur-sm border shadow-sm">
+                <Label htmlFor="transfer-mode" className="text-sm font-medium">Reverse</Label>
                 <Switch
                   id="transfer-mode"
                   checked={isReverseTransfer}
@@ -144,213 +149,246 @@ const TransferMoneyDialog: React.FC<TransferMoneyDialogProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto">
-            <div className="grid md:grid-cols-[1.2fr,0.8fr] divide-x h-full">
-              <div className="p-6 space-y-6">
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <UserIcon className="w-5 h-5 text-primary" />
-                      {isReverseTransfer ? "Select Source User" : "Select Recipient"}
-                    </div>
-                  </Label>
-                  
-                  <Card className="overflow-hidden">
-                    <Select
-                      value={formData.receiptMobileNumber}
-                      onValueChange={(value) => handleSelectChange(value, "receiptMobileNumber")}
-                    >
-                      <SelectTrigger className="h-[80px] border-0 bg-transparent p-4">
-                        {selectedUser ? (
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <UserIcon className="w-6 h-6 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-lg font-semibold truncate">{selectedUser.owner_name}</div>
-                              <div className="text-sm text-muted-foreground truncate flex items-center gap-2">
-                                {selectedUser.shop_name && (
-                                  <>
-                                    <span>{selectedUser.shop_name}</span>
-                                    <span>•</span>
-                                  </>
-                                )}
-                                <span>+91 {selectedUser.mobile_number}</span>
-                              </div>
-                            </div>
-                            <Badge variant="secondary" className="ml-auto">
-                              {selectedUser.groupDetails?.group_name}
-                            </Badge>
-                          </div>
-                        ) : (
-                          <SelectValue placeholder="Choose a recipient" />
-                        )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <div className="sticky top-0 p-2 bg-background border-b">
-                          <Input
-                            placeholder="Search by name, shop, or number..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="p-0 max-h-[300px] overflow-y-auto">
-                          {filteredUsers.length === 0 ? (
-                            <div className="p-2 text-sm text-center text-muted-foreground">
-                              No users found
-                            </div>
-                          ) : (
-                            filteredUsers.map((user) => (
-                              <SelectItem
-                                key={user.mobile_number}
-                                value={user.mobile_number.toString()}
-                                className="p-2 m-1 rounded-md cursor-pointer"
+          {/* Main Content */}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid lg:grid-cols-[1fr,auto] h-full">
+              {/* Left Section - Main Content */}
+              <div className="p-6 space-y-6 overflow-y-auto">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  {/* User Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2 text-foreground/80">
+                      <UserIcon className="w-4 h-4 text-primary" />
+                      {isReverseTransfer ? "Source User" : "Recipient"}
+                    </Label>
+                    
+                    <Card className="overflow-hidden border-none shadow-sm bg-card/50">
+                      <Select
+                        value={formData.receiptMobileNumber}
+                        onValueChange={(value) => handleSelectChange(value, "receiptMobileNumber")}
+                      >
+                        <SelectTrigger className="h-[70px] border-0 bg-transparent p-3 focus:ring-1 focus:ring-primary/20">
+                          <AnimatePresence mode="wait">
+                            {selectedUser ? (
+                              <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center gap-3"
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                    <UserIcon className="w-4 h-4 text-primary" />
+                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 shadow-inner">
+                                  <UserIcon className="w-5 h-5 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate text-foreground/90">{selectedUser.owner_name}</div>
+                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                    {selectedUser.shop_name && (
+                                      <>
+                                        <span className="truncate">{selectedUser.shop_name}</span>
+                                        <span>•</span>
+                                      </>
+                                    )}
+                                    <span className="shrink-0">+91 {selectedUser.mobile_number}</span>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium truncate">{user.owner_name}</div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <span className="truncate">{user.shop_name}</span>
-                                      {user.shop_name && <span>•</span>}
-                                      <span className="shrink-0">+91 {user.mobile_number}</span>
+                                </div>
+                                <Badge variant="secondary" className="shrink-0 bg-primary/5 text-primary hover:bg-primary/10">
+                                  {selectedUser.groupDetails?.group_name}
+                                </Badge>
+                              </motion.div>
+                            ) : (
+                              <SelectValue placeholder="Choose a recipient" />
+                            )}
+                          </AnimatePresence>
+                        </SelectTrigger>
+                        <SelectContent className="border-none shadow-sm bg-card/95 backdrop-blur-sm">
+                          <div className="sticky top-0 p-2 bg-background/95 backdrop-blur-sm border-b">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search by name, shop, or number..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="h-9 text-sm pl-9 pr-4 bg-transparent focus-visible:ring-1 focus-visible:ring-primary/20"
+                              />
+                            </div>
+                          </div>
+                          <div className="p-1.5 max-h-[250px] overflow-y-auto">
+                            {filteredUsers.length === 0 ? (
+                              <div className="p-3 text-sm text-center text-muted-foreground">
+                                No users found
+                              </div>
+                            ) : (
+                              filteredUsers.map((user) => (
+                                <SelectItem
+                                  key={user.mobile_number}
+                                  value={user.mobile_number.toString()}
+                                  className="p-2 rounded-lg cursor-pointer focus:bg-primary/5 data-[state=checked]:bg-primary/5"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <UserIcon className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium truncate text-foreground/90">{user.owner_name}</div>
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {user.shop_name && `${user.shop_name} • `}+91 {user.mobile_number}
+                                      </div>
                                     </div>
                                   </div>
-                                  <Badge variant="secondary" className="shrink-0">
-                                    {user.groupDetails?.group_name}
-                                  </Badge>
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </div>
-                      </SelectContent>
-                    </Select>
-                  </Card>
-                </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </div>
+                        </SelectContent>
+                      </Select>
+                    </Card>
+                  </div>
 
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <IndianRupee className="w-5 h-5 text-primary" />
-                    Enter Amount
-                  </Label>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="relative">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-semibold text-primary">₹</div>
-                        <Input
-                          id="amount"
-                          value={formData.amount}
-                          onChange={handleChange}
-                          placeholder="0.00"
-                          type="number"
-                          min="1"
-                          className="pl-12 h-16 text-3xl font-semibold"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {/* Amount Input */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2 text-foreground/80">
+                      <IndianRupee className="w-4 h-4 text-primary" />
+                      Amount
+                    </Label>
+                    <Card className="border-none shadow-sm bg-card/50">
+                      <CardContent className="p-3">
+                        <div className="relative">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-semibold text-primary">₹</div>
+                          <Input
+                            id="amount"
+                            value={formData.amount}
+                            onChange={handleChange}
+                            placeholder="0.00"
+                            type="number"
+                            min="1"
+                            className="pl-10 h-14 text-2xl font-semibold bg-transparent border-none focus-visible:ring-1 focus-visible:ring-primary/20"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6 bg-muted/5">
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <Wallet className="w-5 h-5 text-primary" />
-                    Select Wallet
-                  </Label>
-                  <div className="space-y-3">
-                    {walletOptions.map((wallet) => (
+              {/* Right Section - Wallet Selection */}
+              <div className="lg:w-[280px] p-6 space-y-4 overflow-y-auto bg-muted/5 border-t lg:border-t-0 lg:border-l">
+                <Label className="text-sm font-medium flex items-center gap-2 text-foreground/80">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  Select Wallet
+                </Label>
+                <div className="space-y-2.5">
+                  {walletOptions.map((wallet) => (
+                    <motion.div
+                      key={wallet.id}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                       <Card
-                        key={wallet.id}
                         className={cn(
-                          "relative cursor-pointer transition-all hover:shadow-md overflow-hidden",
+                          "relative cursor-pointer transition-all overflow-hidden border-none bg-card/50",
                           formData.targetWallet === wallet.id
-                            ? "border-primary ring-1 ring-primary"
-                            : "hover:border-primary/50"
+                            ? "ring-1 ring-primary/20 shadow-sm"
+                            : "hover:ring-1 hover:ring-primary/10"
                         )}
                         onClick={() => handleSelectChange(wallet.id, "targetWallet")}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="p-3">
                           <div className="flex items-center gap-3">
-                            <div className="text-2xl">{wallet.icon}</div>
+                            <div className="text-lg bg-primary/10 w-9 h-9 rounded-full flex items-center justify-center shadow-inner">
+                              {wallet.icon}
+                            </div>
                             <div className="flex-1">
-                              <div className="font-medium">{wallet.label}</div>
-                              <div className="text-sm text-muted-foreground">{wallet.description}</div>
+                              <div className="font-medium text-sm text-foreground/90">{wallet.label}</div>
+                              <div className="text-xs text-muted-foreground">{wallet.description}</div>
                             </div>
                             {formData.targetWallet === wallet.id && (
-                              <div className="h-3 w-3 rounded-full bg-primary" />
+                              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                             )}
                           </div>
                           {selectedUser && formData.targetWallet === wallet.id && (
-                            <div className="mt-4 pt-4 border-t text-sm leading-relaxed">
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              className="mt-2.5 pt-2.5 border-t"
+                            >
                               <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Available Balance</span>
-                                <span className="font-semibold">
+                                <span className="text-xs text-muted-foreground">Available Balance</span>
+                                <span className="font-medium text-sm">
                                   ₹{Number(selectedUser[wallet.id as keyof User] ?? 0).toFixed(2)}
                                 </span>
                               </div>
-                            </div>
+                            </motion.div>
                           )}
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t p-6 bg-muted/5">
-            <div className="flex items-center justify-between gap-4 max-w-[1000px] mx-auto">
-              <motion.div 
-                className="flex-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-              >
+          {/* Footer */}
+          <div className="border-t p-4 bg-muted/5">
+            <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 px-2">
+              <AnimatePresence>
                 {selectedUser && formData.targetWallet && formData.amount && (
-                  <div className="rounded-lg bg-primary/5 p-2 text-sm">
-                    <div className="font-medium text-primary">Transaction Summary</div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <UserIcon className="w-3 h-3" />
-                      {isReverseTransfer ? "From:" : "To:"} {selectedUser.owner_name}
-                      <span className="mx-2 text-primary">|</span>
-                      <Wallet className="w-3 h-3" />
-                      {walletOptions.find((w) => w.id === formData.targetWallet)?.label}
+                  <motion.div 
+                    className="flex-1"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                  >
+                    <div className="rounded-lg bg-card/50 p-3 border shadow-sm">
+                      <div className="font-medium text-primary text-sm">Transaction Summary</div>
+                      <div className="flex items-center gap-2 text-muted-foreground mt-1.5 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <UserIcon className="w-3.5 h-3.5" />
+                          <span>{isReverseTransfer ? "From" : "To"}:</span>
+                          <span className="font-medium text-foreground/90">{selectedUser.owner_name}</span>
+                        </div>
+                        <span className="text-primary/40">•</span>
+                        <div className="flex items-center gap-1.5">
+                          <Wallet className="w-3.5 h-3.5" />
+                          <span className="font-medium text-foreground/90">
+                            {walletOptions.find((w) => w.id === formData.targetWallet)?.label}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
-              </motion.div>
+              </AnimatePresence>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
                   disabled={isSubmitting}
+                  size="sm"
+                  className="text-xs font-medium px-4"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="min-w-[130px]"
+                  size="sm"
+                  className={cn(
+                    "min-w-[120px] text-xs font-medium relative overflow-hidden",
+                    isSubmitting && "text-transparent"
+                  )}
                   disabled={isSubmitting || !formData.amount || !formData.receiptMobileNumber || !formData.targetWallet}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      {isReverseTransfer ? 'Withdraw' : 'Transfer'}
-                      <ArrowRight className={cn("ml-2 h-4 w-4 transition-transform", 
-                        isReverseTransfer && "rotate-180")} />
-                    </>
+                  {isSubmitting && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
                   )}
+                  <span className="flex items-center gap-1.5">
+                    {isReverseTransfer ? 'Withdraw' : 'Transfer'}
+                    <ArrowRight className={cn("w-3.5 h-3.5 transition-transform", 
+                      isReverseTransfer && "rotate-180")} />
+                  </span>
                 </Button>
               </div>
             </div>
