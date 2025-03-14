@@ -13,11 +13,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ModeToggle } from "@/components/ThemeToggle";
 import { apiRequest } from "@/lib/api";
-import { Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import AuthLayout from "@/components/auth-layout"; // Add import
+import AuthLayout from "@/components/auth-layout";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -47,29 +46,32 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <Card className="mx-auto max-w-sm glass-card">
-        <CardHeader>
-          <div className="grid grid-flow-col justify-between mb-3">
-            <CardTitle className="text-2xl">Reset Password</CardTitle>
-            <ModeToggle />
-          </div>
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-semibold">
+            Forgot password?
+          </CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email and we&apos;ll send you a reset link
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleResetPassword}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
@@ -79,18 +81,17 @@ export default function ForgotPasswordPage() {
                   </>
                 ) : (
                   <>
-                    <Mail className="mr-2 h-4 w-4" /> Send Reset Link
+                    <Mail className="mr-2 h-4 w-4" /> Send reset link
                   </>
                 )}
               </Button>
-              <div className="text-center text-sm">
-                Remember your password?{" "}
-                <Link href="/auth/login" className="underline">
-                  Login
-                </Link>
-              </div>
             </div>
           </form>
+          <div className="mt-6 text-center text-sm">
+            <Link href="/auth/login" className="inline-flex items-center text-primary hover:underline">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to login
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </AuthLayout>

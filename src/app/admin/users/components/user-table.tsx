@@ -130,14 +130,14 @@ export function UserTable<TData extends User, TValue>({
           ? roleFilter.split(".").includes(row.group_code)
           : true;
 
-        // Status filter
+        // Status filter - Show all data if both statuses are selected
         const statusMatch = statusFilter
-          ? row.status === (statusFilter === "true")
+          ? statusFilter.split(".").some(status => row.status === (status === "true"))
           : true;
 
-        // Parent filter
+        // Parent filter - Show all matching parents if multiple selected
         const parentMatch = parentFilter
-          ? row.parent_number?.toString() === parentFilter
+          ? parentFilter.split(".").some(parent => row.parent_number?.toString() === parent)
           : true;
 
         // Search filter

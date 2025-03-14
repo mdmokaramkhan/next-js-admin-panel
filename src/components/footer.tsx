@@ -1,25 +1,20 @@
-import { Heart, Facebook, Twitter, Instagram } from "lucide-react";
+import { Heart } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="footer py-2">
-      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center text-sm">
-        <div className="flex items-center space-x-4 mb-2 sm:mb-0">
-          <a href="https://facebook.com" className="hover:underline flex items-center">
-            <Facebook className="w-4 h-4 mr-1" /> Facebook
-          </a>
-          <a href="https://twitter.com" className="hover:underline flex items-center">
-            <Twitter className="w-4 h-4 mr-1" /> Twitter
-          </a>
-          <a href="https://instagram.com" className="hover:underline flex items-center">
-            <Instagram className="w-4 h-4 mr-1" /> Instagram
-          </a>
+    <footer className="w-full bg-background border-t sticky bottom-0">
+      <div className="container mx-auto py-3 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <a href="/admin/docs" className="hover:text-primary transition-colors">Docs</a>
+            <a href="/admin/support" className="hover:text-primary transition-colors">Support</a>
+            <span>Version 1.0.0</span>
+          </div>
+          <p className="flex items-center text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} Admin Panel <Heart className="w-3 h-3 mx-1 text-red-500" />
+          </p>
         </div>
-        <p className="flex items-center mb-2 sm:mb-0">
-          Crafted with <Heart className="w-4 h-4 mx-1 text-red-500" /> by Your Company
-        </p>
-        <p>&copy; {new Date().getFullYear()} Your Company. All rights reserved.</p>
       </div>
     </footer>
-  )
+  );
 }

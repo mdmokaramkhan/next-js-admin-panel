@@ -13,11 +13,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ModeToggle } from "@/components/ThemeToggle";
 import { apiRequest } from "@/lib/api";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, AtSign, Mail, KeyRound } from "lucide-react";
 import { toast } from "sonner";
-import AuthLayout from "@/components/auth-layout"; // Add import
+import AuthLayout from "@/components/auth-layout";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -69,66 +68,81 @@ export default function SignUpPage() {
 
   return (
     <AuthLayout>
-      <Card className="mx-auto max-w-sm glass-card">
-        <CardHeader>
-          <div className="grid grid-flow-col justify-between mb-3">
-            <CardTitle className="text-2xl">Sign Up</CardTitle>
-            <ModeToggle />
-          </div>
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-semibold">
+            Create an account
+          </CardTitle>
           <CardDescription>
-            Create a new account to get started
+            Enter your details to create your account
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignup}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  name="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  required
-                  value={formData.username}
-                  onChange={handleInputChange}
-                />
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="Enter your username"
+                    required
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className="pl-9"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="pl-9"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  placeholder="Create a password"
-                  onChange={handleInputChange}
-                />
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    placeholder="Create a password"
+                    onChange={handleInputChange}
+                    className="pl-9"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={formData.confirmPassword}
-                  placeholder="Confirm your password"
-                  onChange={handleInputChange}
-                />
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    placeholder="Confirm your password"
+                    onChange={handleInputChange}
+                    className="pl-9"
+                  />
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
@@ -138,18 +152,18 @@ export default function SignUpPage() {
                   </>
                 ) : (
                   <>
-                    <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+                    <UserPlus className="mr-2 h-4 w-4" /> Create account
                   </>
                 )}
               </Button>
-              <div className="text-center text-sm">
-                Already have an account?{" "}
-                <Link href="/auth/login" className="underline">
-                  Login
-                </Link>
-              </div>
             </div>
           </form>
+          <div className="mt-6 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </AuthLayout>
