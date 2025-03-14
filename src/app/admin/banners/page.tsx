@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const BANNER_API_URL = "https://spdpay.in/application-content/banners/banners.php";
 const CARD_API_URL = "https://spdpay.in/application-content/cards/cards.php";
@@ -24,6 +27,7 @@ const ICON_UPLOAD_URL = "https://spdpay.in/application-content/uploads.php";
 interface Banner {
   name: string;
   status: 'active' | 'inactive';
+  backgroundColor: string;
 }
 
 interface Card {
@@ -36,6 +40,145 @@ interface Card {
   type: 'home' | 'mobile';
 }
 
+const COLOR_PRESETS = [
+  // Base Colors
+  { value: '#FFFFFF', name: 'White' },
+  { value: '#F8F9FA', name: 'Light Gray' },
+  { value: '#1A1A1A', name: 'Dark' },
+  { value: '#111827', name: 'Deep Dark' },
+  
+  // Modern Blues
+  { value: '#2563EB', name: 'Royal Blue' },
+  { value: '#3B82F6', name: 'Bright Blue' },
+  { value: '#60A5FA', name: 'Sky Blue' },
+  
+  // Fresh Greens
+  { value: '#059669', name: 'Emerald' },
+  { value: '#10B981', name: 'Green' },
+  { value: '#34D399', name: 'Mint' },
+  
+  // Warm Colors
+  { value: '#DC2626', name: 'Red' },
+  { value: '#F97316', name: 'Orange' },
+  { value: '#F59E0B', name: 'Amber' },
+  
+  // Cool Accents
+  { value: '#6366F1', name: 'Indigo' },
+  { value: '#8B5CF6', name: 'Purple' },
+  { value: '#EC4899', name: 'Pink' },
+  
+  // Modern Neutrals
+  { value: '#6B7280', name: 'Gray' },
+  { value: '#4B5563', name: 'Slate' },
+  { value: '#374151', name: 'Cool Gray' }
+];
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+interface ColorPickerProps {
+  color: string;
+  onChange: (color: string) => void;
+  label: string;
+}
+
+function ColorPicker({ color, onChange, label }: ColorPickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rgb = hexToRgb(color);
+
+  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newColor = e.target.value;
+    if (/^#[0-9A-F]{6}$/i.test(newColor)) {
+      onChange(newColor.toUpperCase());
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Color code copied to clipboard!");
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <div className="flex items-center gap-2 cursor-pointer group">
+          <Label className="text-xs text-muted-foreground cursor-pointer">
+            {label}:
+          </Label>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded-md border border-border group-hover:border-primary transition-colors"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+              {color.toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start">
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            {/* Color Preview and Values */}
+            <div
+              className="w-16 h-16 rounded-md border border-border"
+              style={{ backgroundColor: color }}
+            />
+            <div className="flex-1 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => onChange(e.target.value.toUpperCase())}
+                  className="w-8 h-8 rounded-md cursor-pointer p-0 border-0"
+                />
+                <Input
+                  value={color.toUpperCase()}
+                  onChange={handleColorChange}
+                  className="flex-1 h-8 font-mono text-xs"
+                  maxLength={7}
+                  placeholder="#000000"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">RGB</span>
+                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                  {rgb ? `${rgb.r}, ${rgb.g}, ${rgb.b}` : 'N/A'}
+                </code>
+              </div>
+            </div>
+          </div>
+
+          {/* Preset Colors */}
+          <div className="grid grid-cols-8 gap-1.5">
+            {COLOR_PRESETS.map((preset) => (
+              <button
+                key={preset.value}
+                onClick={() => onChange(preset.value)}
+                className="w-full aspect-square rounded-md border border-border hover:border-primary transition-colors relative"
+                style={{ backgroundColor: preset.value }}
+                title={preset.name}
+              >
+                {color.toLowerCase() === preset.value.toLowerCase() && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <div className="w-1 h-1 rounded-full bg-white" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function BannersPage() {
   // Existing banner states
   const [images, setImages] = useState<Banner[]>([]);
@@ -43,6 +186,7 @@ export default function BannersPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newBannerColor, setNewBannerColor] = useState('#FFFFFF');
 
   // New card states
   const [cards, setCards] = useState<Card[]>([]);
@@ -90,6 +234,7 @@ export default function BannersPage() {
     
     const formData = new FormData();
     formData.append('image', fileInputRef.current.files[0]);
+    formData.append('backgroundColor', newBannerColor);
 
     try {
       const response = await fetch(BANNER_API_URL, {
@@ -104,6 +249,7 @@ export default function BannersPage() {
         fetchImages();
         setOpenDialog(false);
         setPreview(null);
+        setNewBannerColor('#FFFFFF'); // Reset color for next upload
       } else {
         throw new Error(data.message);
       }
@@ -119,15 +265,14 @@ export default function BannersPage() {
   const handleDelete = async (filename: string) => {
     const loadingToast = toast.loading("Deleting banner...");
     try {
-      // Create URLSearchParams for the request body
       const formData = new URLSearchParams();
       formData.append('filename', filename);
 
       const response = await fetch(BANNER_API_URL, {
         method: 'DELETE',
-        body: formData.toString(), // Send as URL-encoded form data
+        body: formData.toString(),
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Change content type
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
 
@@ -147,12 +292,13 @@ export default function BannersPage() {
     }
   };
 
-  const toggleStatus = async (banner: Banner) => {
-    const loadingToast = toast.loading(`Updating banner status...`);
+  const updateBannerData = async (banner: Banner, updates: { status?: 'active' | 'inactive', backgroundColor?: string }) => {
+    const loadingToast = toast.loading(`Updating banner...`);
     try {
       const formData = new URLSearchParams();
       formData.append('filename', banner.name);
-      formData.append('status', banner.status === 'active' ? 'inactive' : 'active');
+      if (updates.status) formData.append('status', updates.status);
+      if (updates.backgroundColor) formData.append('backgroundColor', updates.backgroundColor);
 
       const response = await fetch(BANNER_API_URL, {
         method: 'PATCH',
@@ -164,7 +310,7 @@ export default function BannersPage() {
 
       const data = await response.json();
       if (data.status === 'success') {
-        toast.success("Banner status updated", {
+        toast.success("Banner updated", {
           id: loadingToast,
         });
         fetchImages();
@@ -172,10 +318,18 @@ export default function BannersPage() {
         throw new Error(data.message);
       }
     } catch {
-      toast.error("Failed to update banner status", {
+      toast.error("Failed to update banner", {
         id: loadingToast,
       });
     }
+  };
+
+  const toggleStatus = (banner: Banner) => {
+    updateBannerData(banner, { status: banner.status === 'active' ? 'inactive' : 'active' });
+  };
+
+  const updateBackgroundColor = (banner: Banner, color: string) => {
+    updateBannerData(banner, { backgroundColor: color });
   };
 
   const fetchCards = async () => {
@@ -305,6 +459,7 @@ export default function BannersPage() {
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="cursor-pointer relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/40 transition-colors"
+                    style={{ backgroundColor: newBannerColor }}
                   >
                     {preview ? (
                       <>
@@ -333,6 +488,29 @@ export default function BannersPage() {
                         <p className="text-sm">Click to choose a banner image</p>
                       </div>
                     )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-base font-medium">Background Color</Label>
+                    <div className="flex gap-2 items-center">
+                      <div
+                        className="w-8 h-8 rounded-md border"
+                        style={{ backgroundColor: newBannerColor }}
+                      />
+                      <Input
+                        type="text"
+                        value={newBannerColor}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setNewBannerColor(value);
+                          // Only uppercase when it's a valid hex color
+                          if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                            setNewBannerColor(value.toUpperCase());
+                          }
+                        }}
+                        placeholder="#FFFFFF"
+                        className="font-mono"
+                      />
+                    </div>
                   </div>
                   <Button
                     onClick={handleUpload}
@@ -365,12 +543,12 @@ export default function BannersPage() {
               {images.map((banner) => (
                 <Card key={banner.name} className="group overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="relative h-48 w-full">
+                    <div className="relative h-48 w-full" style={{ backgroundColor: banner.backgroundColor }}>
                       <Image
                         src={`https://spdpay.in/application-content/banners/${banner.name}`}
                         alt={banner.name}
                         fill
-                        className="object-contain bg-muted/20 p-2"
+                        className="object-contain p-2"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         priority
                       />
@@ -391,13 +569,20 @@ export default function BannersPage() {
                         </Button>
                       </div>
                     </div>
-                    <div className="p-3 border-t flex justify-between items-center">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {banner.name}
-                      </p>
-                      <Badge variant={banner.status === 'active' ? 'default' : 'secondary'}>
-                        {banner.status}
-                      </Badge>
+                    <div className="p-3 border-t">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-xs text-muted-foreground truncate">
+                          {banner.name}
+                        </p>
+                        <Badge variant={banner.status === 'active' ? 'default' : 'secondary'}>
+                          {banner.status}
+                        </Badge>
+                      </div>
+                      <ColorPicker
+                        color={banner.backgroundColor}
+                        onChange={(color) => updateBackgroundColor(banner, color)}
+                        label="Background"
+                      />
                     </div>
                   </CardContent>
                 </Card>
