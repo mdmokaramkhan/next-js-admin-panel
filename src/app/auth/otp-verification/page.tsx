@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { Lock, Loader2, ArrowLeft } from "lucide-react";
 import { getAuthToken, setAuthToken } from "@/utils/cookies";
 import AuthLayout from "@/components/auth-layout";
 
-export default function OTPVerificationPage() {
+function OTPVerificationContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -165,5 +165,13 @@ export default function OTPVerificationPage() {
         </CardContent>
       </Card>
     </AuthLayout>
+  );
+}
+
+export default function OTPVerificationPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OTPVerificationContent />
+    </Suspense>
   );
 }
