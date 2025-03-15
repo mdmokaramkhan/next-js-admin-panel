@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Loader2, Upload, X, Copy } from "lucide-react";
+import { Loader2, Upload, X, Copy, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const BANNER_API_URL = "https://spdpay.in/application-content/banners/banners.php";
-const CARD_API_URL = "https://spdpay.in/application-content/cards/cards.php";
+const CARD_API_URL = "https://spdpay.in/application-content/cards/cards.php/banners";
 const ICON_UPLOAD_URL = "https://spdpay.in/application-content/uploads.php";
+const ICON_BASE_URL = "https://spdpay.in/application-content/icons";
+
+// Helper function to get full icon URL
+const getIconUrl = (iconPath: string) => {
+  if (iconPath.startsWith('http')) return iconPath;
+  return `${ICON_BASE_URL}/${iconPath.replace(/^icons\//, '')}`;
+};
 
 interface Banner {
   name: string;
@@ -37,7 +44,8 @@ interface Card {
   description: string;
   long_description: string;
   action_path: string;
-  type: 'home' | 'mobile';
+  type: 'home' | 'notification' | 'promotion' | 'alert';
+  category: 'general' | 'payment' | 'offer' | 'security' | 'feature';
 }
 
 const COLOR_PRESETS = [
@@ -179,13 +187,36 @@ function ColorPicker({ color, onChange, label }: ColorPickerProps) {
   );
 }
 
+interface EmptyStateProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}
+
+function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="rounded-full bg-muted/30 p-4 mb-4">
+        {icon}
+      </div>
+      <h3 className="text-lg font-medium">{title}</h3>
+      <p className="text-sm text-muted-foreground mt-1">
+        {description}
+      </p>
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
 export default function BannersPage() {
   // Existing banner states
   const [images, setImages] = useState<Banner[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const cardFileInputRef = useRef<HTMLInputElement>(null);
   const [newBannerColor, setNewBannerColor] = useState('#FFFFFF');
 
   // New card states
@@ -194,6 +225,8 @@ export default function BannersPage() {
   const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
   const [cardIcon, setCardIcon] = useState<File | null>(null);
   const [cardIconPreview, setCardIconPreview] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const fetchImages = async () => {
     const loadingToast = toast.loading("Fetching banners...");
@@ -227,13 +260,13 @@ export default function BannersPage() {
   };
 
   const handleUpload = async () => {
-    if (!fileInputRef.current?.files?.[0]) return;
+    if (!bannerFileInputRef.current?.files?.[0]) return;
 
     const loadingToast = toast.loading("Uploading banner...");
     setIsUploading(true);
     
     const formData = new FormData();
-    formData.append('image', fileInputRef.current.files[0]);
+    formData.append('image', bannerFileInputRef.current.files[0]);
     formData.append('backgroundColor', newBannerColor);
 
     try {
@@ -249,6 +282,9 @@ export default function BannersPage() {
         fetchImages();
         setOpenDialog(false);
         setPreview(null);
+        if (bannerFileInputRef.current) {
+          bannerFileInputRef.current.value = '';
+        }
         setNewBannerColor('#FFFFFF'); // Reset color for next upload
       } else {
         throw new Error(data.message);
@@ -335,16 +371,30 @@ export default function BannersPage() {
   const fetchCards = async () => {
     const loadingToast = toast.loading("Fetching cards...");
     try {
-      const response = await fetch(CARD_API_URL);
+      const url = filterType === 'all' ? CARD_API_URL : `${CARD_API_URL}?type=${filterType}`;
+      console.log('Fetching cards from:', url);
+      
+      const response = await fetch(url);
       const data = await response.json();
-      if (data.success) {
-        setCards(data.cards);
-        toast.success("Cards fetched successfully", { id: loadingToast });
+      
+      console.log('Cards API response:', data);
+      
+      if (response.ok) {
+        if (Array.isArray(data)) {
+          setCards(data);
+          toast.success("Cards fetched successfully", { id: loadingToast });
+        } else if (data.cards && Array.isArray(data.cards)) {
+          setCards(data.cards);
+          toast.success("Cards fetched successfully", { id: loadingToast });
+        } else {
+          throw new Error("Invalid response format");
+        }
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || 'Failed to fetch cards');
       }
-    } catch {
-      toast.error("Failed to fetch cards", { id: loadingToast });
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+      toast.error(`Failed to fetch cards: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToast });
     }
   };
 
@@ -372,8 +422,19 @@ export default function BannersPage() {
   const handleCardSubmit = async (formData: FormData) => {
     const loadingToast = toast.loading(selectedCard ? "Updating card..." : "Creating card...");
     try {
-      const iconPath = cardIcon ? await handleCardIconUpload() : selectedCard?.icon;
-      if (!iconPath) throw new Error("Icon upload failed");
+      let iconPath: string = selectedCard?.icon || '';
+      
+      if (cardIcon) {
+        const uploadedPath = await handleCardIconUpload();
+        if (!uploadedPath) throw new Error("Icon upload failed");
+        // Remove the base URL if it's included
+        iconPath = uploadedPath.replace(ICON_BASE_URL + '/', '');
+        if (!iconPath.startsWith('icons/')) {
+          iconPath = `icons/${iconPath}`;
+        }
+      }
+
+      if (!iconPath) throw new Error("Icon is required");
 
       const cardData = {
         icon: iconPath,
@@ -382,16 +443,27 @@ export default function BannersPage() {
         long_description: formData.get('long_description'),
         action_path: formData.get('action_path'),
         type: formData.get('type'),
+        category: formData.get('category')
       };
 
-      const response = await fetch(selectedCard ? `${CARD_API_URL}/${selectedCard.id}` : CARD_API_URL, {
+      console.log('Submitting card data:', cardData);
+
+      const url = selectedCard ? `${CARD_API_URL}/${selectedCard.id}` : CARD_API_URL;
+      console.log('Submitting to URL:', url);
+
+      const response = await fetch(url, {
         method: selectedCard ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(cardData),
       });
 
       const data = await response.json();
-      if (data.success) {
+      console.log('Card submit response:', data);
+
+      if (response.ok) {
         toast.success(`Card ${selectedCard ? 'updated' : 'created'} successfully`, { id: loadingToast });
         fetchCards();
         setIsCardDialogOpen(false);
@@ -399,10 +471,11 @@ export default function BannersPage() {
         setCardIcon(null);
         setCardIconPreview(null);
       } else {
-        throw new Error(data.message);
+        throw new Error(data.message || 'Operation failed');
       }
-    } catch {
-      toast.error(`Failed to ${selectedCard ? 'update' : 'create'} card`, { id: loadingToast });
+    } catch (error) {
+      console.error('Error submitting card:', error);
+      toast.error(`Failed to ${selectedCard ? 'update' : 'create'} card: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToast });
     }
   };
 
@@ -424,126 +497,74 @@ export default function BannersPage() {
     }
   };
 
+  const filteredCards = cards.filter(card => {
+    const matchesType = filterType === 'all' || card.type === filterType;
+    const matchesCategory = filterCategory === 'all' || card.category === filterCategory;
+    return matchesType && matchesCategory;
+  });
+
   useEffect(() => {
     fetchImages();
-    fetchCards();
   }, []);
 
+  useEffect(() => {
+    fetchCards();
+  }, [filterType, filterCategory]);
+
   return (
-    <PageContainer scrollable>
-      <div className="space-y-2 pb-4 h-full">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-2xl font-bold tracking-tight">
-            Manage Banners 🎯
-          </h2>
-          <div className="flex items-center space-x-2">
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-              <DialogTrigger asChild>
-                <Button>Upload Banner</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Upload Banner</DialogTitle>
-                  <DialogDescription>
-                    Choose an image file to upload as a banner.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    ref={fileInputRef}
-                  />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="cursor-pointer relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/40 transition-colors"
-                    style={{ backgroundColor: newBannerColor }}
-                  >
-                    {preview ? (
-                      <>
-                        <Image
-                          src={preview}
-                          alt="Preview"
-                          fill
-                          className="object-contain p-2"
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreview(null);
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = '';
-                            }
-                          }}
-                          className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                        <Upload className="h-8 w-8" />
-                        <p className="text-sm">Click to choose a banner image</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-base font-medium">Background Color</Label>
-                    <div className="flex gap-2 items-center">
-                      <div
-                        className="w-8 h-8 rounded-md border"
-                        style={{ backgroundColor: newBannerColor }}
-                      />
-                      <Input
-                        type="text"
-                        value={newBannerColor}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setNewBannerColor(value);
-                          // Only uppercase when it's a valid hex color
-                          if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
-                            setNewBannerColor(value.toUpperCase());
-                          }
-                        }}
-                        placeholder="#FFFFFF"
-                        className="font-mono"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleUpload}
-                    disabled={!preview || isUploading}
-                    className="w-full"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      'Upload Banner'
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+    <PageContainer>
+      <div className="h-full flex flex-col gap-8">
+        {/* Page Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">Content Management</h1>
+          <p className="text-muted-foreground">
+            Manage your application's banners and promotional cards.
+          </p>
         </div>
 
-        <Tabs defaultValue="banners" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="banners">Banners</TabsTrigger>
-            <TabsTrigger value="cards">Cards</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="banners" className="h-full">
+          <div className="flex items-center justify-between mb-6">
+            <TabsList>
+              <TabsTrigger value="banners" className="text-base">Banners</TabsTrigger>
+              <TabsTrigger value="cards" className="text-base">Cards</TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-4">
+              <TabsContent value="banners" className="m-0">
+                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Banner
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
+              </TabsContent>
+              <TabsContent value="cards" className="m-0">
+                <Button 
+                  onClick={() => {
+                    setSelectedCard(null);
+                    setCardIcon(null);
+                    setCardIconPreview(null);
+                    setIsCardDialogOpen(true);
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Add Card
+                </Button>
+              </TabsContent>
+            </div>
+          </div>
 
-          <TabsContent value="banners" className="space-y-4">
+          {/* Banners Content */}
+          <TabsContent value="banners" className="mt-0 h-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {images.map((banner) => (
                 <Card key={banner.name} className="group overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="relative h-48 w-full" style={{ backgroundColor: banner.backgroundColor }}>
+                    <div 
+                      className="relative h-48 w-full transition-all" 
+                      style={{ backgroundColor: banner.backgroundColor }}
+                    >
                       <Image
                         src={`https://spdpay.in/application-content/banners/${banner.name}`}
                         alt={banner.name}
@@ -569,9 +590,9 @@ export default function BannersPage() {
                         </Button>
                       </div>
                     </div>
-                    <div className="p-3 border-t">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs text-muted-foreground truncate">
+                    <div className="p-4 space-y-3 border-t">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground truncate font-medium">
                           {banner.name}
                         </p>
                         <Badge variant={banner.status === 'active' ? 'default' : 'secondary'}>
@@ -588,204 +609,424 @@ export default function BannersPage() {
                 </Card>
               ))}
               {images.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center text-muted-foreground py-10">
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                      <p>Uploading banner...</p>
-                    </>
-                  ) : (
-                    "No banners found"
-                  )}
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={<Upload className="h-8 w-8" />}
+                    title="No banners found"
+                    description="Upload a banner to get started"
+                    action={
+                      <Button onClick={() => setOpenDialog(true)}>
+                        Upload Banner
+                      </Button>
+                    }
+                  />
                 </div>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="cards" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => {
-                setSelectedCard(null);
-                setCardIcon(null);
-                setCardIconPreview(null);
-                setIsCardDialogOpen(true);
-              }}>
-                Add Card
-              </Button>
+          {/* Cards Content */}
+          <TabsContent value="cards" className="mt-0 h-full space-y-6">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center bg-muted/30 rounded-lg p-3">
+              <div className="flex-1 flex items-center gap-3">
+                <div className="relative">
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="w-[140px] h-9 rounded-md border border-input bg-background pl-3 pr-8 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="home">Home</option>
+                    <option value="notification">Notification</option>
+                    <option value="promotion">Promotion</option>
+                    <option value="alert">Alert</option>
+                  </select>
+                  <ChevronDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+                </div>
+                <div className="relative">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-[140px] h-9 rounded-md border border-input bg-background pl-3 pr-8 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="general">General</option>
+                    <option value="payment">Payment</option>
+                    <option value="offer">Offer</option>
+                    <option value="security">Security</option>
+                    <option value="feature">Feature</option>
+                  </select>
+                  <ChevronDown className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+                </div>
+                {(filterType !== 'all' || filterCategory !== 'all') && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setFilterType('all');
+                      setFilterCategory('all');
+                    }}
+                    className="h-9 px-3"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{filteredCards.length}</span>
+                <span>cards found</span>
+                {(filterType !== 'all' || filterCategory !== 'all') && (
+                  <span className="flex items-center gap-1">
+                    <span>•</span>
+                    <span>Filtered</span>
+                  </span>
+                )}
+              </div>
             </div>
 
+            {/* Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cards.map((card) => (
+              {filteredCards.map((card) => (
                 <Card key={card.id} className="group overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="relative h-12 w-12">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="relative h-16 w-16 rounded-lg border bg-muted/10 p-2">
                         <Image
-                          src={card.icon}
+                          src={getIconUrl(card.icon)}
                           alt={card.title}
                           fill
-                          className="object-contain"
+                          className="object-contain p-2"
                         />
                       </div>
-                      <div>
-                        <h3 className="font-medium">{card.title}</h3>
-                        <p className="text-sm text-muted-foreground">{card.type}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-lg truncate">{card.title}</h3>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant="outline" className="capitalize">
+                            {card.type}
+                          </Badge>
+                          <Badge className="capitalize bg-primary/10 text-primary hover:bg-primary/20">
+                            {card.category}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">{card.description}</p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setIsCardDialogOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteCard(card.id)}
-                      >
-                        Delete
-                      </Button>
+
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm text-muted-foreground">{card.description}</p>
+                      <p className="text-xs text-muted-foreground/75 line-clamp-2">{card.long_description}</p>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                      <code className="text-xs bg-muted px-2 py-1 rounded-md font-mono">
+                        {card.action_path}
+                      </code>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setIsCardDialogOpen(true);
+                          }}
+                          className="h-8 px-2"
+                        >
+                          <span className="sr-only">Edit</span>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCard(card.id)}
+                          className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <span className="sr-only">Delete</span>
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+
+              {filteredCards.length === 0 && (
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={<Upload className="h-8 w-8" />}
+                    title="No cards found"
+                    description={
+                      filterType === 'all' && filterCategory === 'all'
+                        ? "Get started by creating your first card"
+                        : "No cards match your filters"
+                    }
+                    action={
+                      filterType === 'all' && filterCategory === 'all' ? (
+                        <Button 
+                          onClick={() => {
+                            setSelectedCard(null);
+                            setCardIcon(null);
+                            setCardIconPreview(null);
+                            setIsCardDialogOpen(true);
+                          }}
+                        >
+                          Create Card
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setFilterType('all');
+                            setFilterCategory('all');
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      )
+                    }
+                  />
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
 
+      {/* Banner Upload Dialog */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Banner</DialogTitle>
+            <DialogDescription>
+              Choose an image file to upload as a banner.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              ref={bannerFileInputRef}
+            />
+            <div
+              onClick={() => bannerFileInputRef.current?.click()}
+              className="cursor-pointer relative aspect-video rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/40 transition-colors"
+              style={{ backgroundColor: newBannerColor }}
+            >
+              {preview ? (
+                <>
+                  <Image
+                    src={preview}
+                    alt="Preview"
+                    fill
+                    className="object-contain p-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreview(null);
+                      if (bannerFileInputRef.current) {
+                        bannerFileInputRef.current.value = '';
+                      }
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                  <Upload className="h-8 w-8" />
+                  <p className="text-sm">Click to choose a banner image</p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Background Color</Label>
+              <div className="flex gap-2 items-center">
+                <div
+                  className="w-8 h-8 rounded-md border"
+                  style={{ backgroundColor: newBannerColor }}
+                />
+                <Input
+                  type="text"
+                  value={newBannerColor}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setNewBannerColor(value);
+                    if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                      setNewBannerColor(value.toUpperCase());
+                    }
+                  }}
+                  placeholder="#FFFFFF"
+                  className="font-mono"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleUpload}
+              disabled={!preview || isUploading}
+              className="w-full"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Upload Banner'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Card Dialog */}
       <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
         <DialogContent className="max-w-5xl">
           <DialogHeader>
-            <DialogTitle>{selectedCard ? 'Edit Card' : 'Add New Card'}</DialogTitle>
+            <DialogTitle className="text-xl">{selectedCard ? 'Edit Card' : 'Add New Card'}</DialogTitle>
+            <DialogDescription>
+              {selectedCard ? 'Update the details of your existing card.' : 'Create a new card to display in your application.'}
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => {
             e.preventDefault();
             handleCardSubmit(new FormData(e.currentTarget));
           }}>
-            <div className="flex gap-8 py-4">
+            <div className="flex flex-col lg:flex-row gap-8 py-4">
               {/* Left Column - Icon Upload */}
-              <div className="w-1/3">
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer relative aspect-square border-2 border-dashed rounded-lg flex items-center justify-center"
-                >
-                  {(cardIconPreview || selectedCard?.icon) ? (
-                    <Image
-                      src={cardIconPreview || selectedCard?.icon || ''}
-                      alt="Preview"
-                      fill
-                      className="object-contain p-4"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <Upload className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Click to upload icon
-                      </p>
-                    </div>
-                  )}
+              <div className="w-full lg:w-1/3 space-y-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Card Icon</Label>
+                  <div
+                    onClick={() => cardFileInputRef.current?.click()}
+                    className="cursor-pointer relative aspect-square rounded-lg border-2 border-dashed hover:border-primary/50 transition-colors bg-muted/5"
+                  >
+                    {(cardIconPreview || selectedCard?.icon) ? (
+                      <>
+                        <Image
+                          src={cardIconPreview || (selectedCard?.icon ? getIconUrl(selectedCard.icon) : '')}
+                          alt="Preview"
+                          fill
+                          className="object-contain p-4"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCardIcon(null);
+                            setCardIconPreview(null);
+                          }}
+                          className="absolute top-2 right-2 p-1 rounded-full bg-background/80 text-foreground hover:bg-background transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <Upload className="h-12 w-12 mb-2" />
+                        <p className="text-sm font-medium">Click to upload icon</p>
+                        <p className="text-xs mt-1">SVG, PNG or JPG (max. 800x800px)</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setCardIcon(file);
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setCardIconPreview(reader.result as string);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="hidden"
-                  ref={fileInputRef}
-                />
               </div>
 
               {/* Right Column - Form Fields */}
-              <div className="flex-1 grid grid-cols-2 gap-4">
+              <div className="flex-1 grid grid-cols-2 gap-6">
                 <div className="col-span-2">
-                  <label htmlFor="title" className="text-sm font-medium">
-                    Title
-                  </label>
-                  <input
+                  <Label htmlFor="title">Title</Label>
+                  <Input
                     id="title"
                     name="title"
                     defaultValue={selectedCard?.title}
-                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    className="mt-1.5"
+                    placeholder="Enter card title"
                     required
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label htmlFor="description" className="text-sm font-medium">
-                    Description
-                  </label>
-                  <input
+                  <Label htmlFor="description">Short Description</Label>
+                  <Input
                     id="description"
                     name="description"
                     defaultValue={selectedCard?.description}
-                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    className="mt-1.5"
+                    placeholder="Brief description of the card"
                     required
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label htmlFor="long_description" className="text-sm font-medium">
-                    Long Description
-                  </label>
+                  <Label htmlFor="long_description">Detailed Description</Label>
                   <textarea
                     id="long_description"
                     name="long_description"
                     defaultValue={selectedCard?.long_description}
-                    className="w-full mt-1 border rounded-md px-3 py-2"
-                    rows={3}
+                    className="w-full mt-1.5 min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Provide a detailed description"
                     required
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="action_path" className="text-sm font-medium">
-                    Action Path
-                  </label>
-                  <input
+                <div className="col-span-2">
+                  <Label htmlFor="action_path">Action Path</Label>
+                  <Input
                     id="action_path"
                     name="action_path"
                     defaultValue={selectedCard?.action_path}
-                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    className="mt-1.5 font-mono"
+                    placeholder="/path/to/action"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="type" className="text-sm font-medium">
-                    Type
-                  </label>
+                  <Label htmlFor="type">Type</Label>
                   <select
                     id="type"
                     name="type"
                     defaultValue={selectedCard?.type || 'home'}
-                    className="w-full mt-1 border rounded-md px-3 py-2"
+                    className="w-full mt-1.5 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     required
                   >
                     <option value="home">Home</option>
-                    <option value="mobile">Mobile</option>
+                    <option value="notification">Notification</option>
+                    <option value="promotion">Promotion</option>
+                    <option value="alert">Alert</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <select
+                    id="category"
+                    name="category"
+                    defaultValue={selectedCard?.category || 'general'}
+                    className="w-full mt-1.5 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    required
+                  >
+                    <option value="general">General</option>
+                    <option value="payment">Payment</option>
+                    <option value="offer">Offer</option>
+                    <option value="security">Security</option>
+                    <option value="feature">Feature</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" type="button" onClick={() => setIsCardDialogOpen(false)}>
+            <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsCardDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">
@@ -793,6 +1034,23 @@ export default function BannersPage() {
               </Button>
             </div>
           </form>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setCardIcon(file);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setCardIconPreview(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
+            className="hidden"
+            ref={cardFileInputRef}
+          />
         </DialogContent>
       </Dialog>
     </PageContainer>
