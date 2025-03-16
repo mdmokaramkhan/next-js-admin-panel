@@ -32,13 +32,23 @@ export function TemplateFormModal({ isOpen, onClose, template, onSuccess }: Temp
     e.preventDefault();
     try {
       setLoading(true);
-      const method = "POST";
-      const path = template ? "updateMessageTemplate" : "createMessageTemplate";
-      const response = await apiRequest(
-        path,
-        method,
-        { ...formData, id: template?.id }
-      );
+      
+      let response;
+      if (template) {
+        // Update existing template with PUT request
+        response = await apiRequest(
+          `message-templates/${template.id}`,
+          "PUT",
+          { ...formData }
+        );
+      } else {
+        // Create new template with POST request
+        response = await apiRequest(
+          "message-templates",
+          "POST",
+          { ...formData }
+        );
+      }
 
       if (response.success) {
         toast.success(template ? "Template updated" : "Template created");
