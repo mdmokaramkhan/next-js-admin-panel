@@ -55,7 +55,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         onClose={() => setOpenEditModal(false)}
         onAddProduct={(newProduct) => {
           // Handle add or update logic here
-          console.log(newProduct);
+          // Removed debug log to prevent sensitive data exposure
           setOpenEditModal(false);
         }}
         productToEdit={editProduct} // Pass product data to the edit modal

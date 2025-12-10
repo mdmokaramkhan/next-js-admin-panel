@@ -12,6 +12,7 @@ import { CellAction } from "./cell-action";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DOMPurify from "dompurify";
 
 export type MessageTemplate = {
   id?: number;
@@ -155,7 +156,7 @@ const ViewTemplateButton = ({ template }: { template: string }) => {
           <TabsContent value="preview">
             <div
               className="border rounded-md p-4 bg-muted overflow-auto max-h-[400px]"
-              dangerouslySetInnerHTML={{ __html: template }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(template) }}
             />
           </TabsContent>
           <TabsContent value="code">

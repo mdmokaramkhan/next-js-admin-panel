@@ -54,8 +54,7 @@ export function CheckResponseDialog({
         group: selectedGroup,
       });
 
-      console.log("Request payload:", { message, group: selectedGroup });
-      console.log("API Response:", response);
+      // Removed console.log statements to prevent sensitive data exposure
 
       if (!response) {
         toast.error("No response received from server");
@@ -79,7 +78,10 @@ export function CheckResponseDialog({
         }
       }
     } catch (error) {
-      console.error("Request Error Details:", error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Request Error:", error);
+      }
       toast.error("Failed to connect to the server");
     } finally {
       setLoading(false);

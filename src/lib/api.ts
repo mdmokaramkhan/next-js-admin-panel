@@ -39,8 +39,13 @@ export async function apiRequest(
 
     return data;
   } catch (error) {
-    console.error('API Error:', (error as Error).message );
-    if ((error as Error).message === "Session expired or logged out" || (error as Error).message === "Unauthorized Access") {
+    // Log error without exposing sensitive information
+    const errorMessage = error instanceof Error ? error.message : 'API request failed';
+    // Only log generic error messages in production
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Error:', errorMessage);
+    }
+    if (errorMessage === "Session expired or logged out" || errorMessage === "Unauthorized Access") {
       removeAuthToken(router);
     }
     throw error;

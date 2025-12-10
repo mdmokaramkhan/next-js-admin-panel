@@ -372,12 +372,9 @@ export default function BannersPage() {
     const loadingToast = toast.loading("Fetching cards...");
     try {
       const url = filterType === 'all' ? CARD_API_URL : `${CARD_API_URL}?type=${filterType}`;
-      console.log('Fetching cards from:', url);
       
       const response = await fetch(url);
       const data = await response.json();
-      
-      console.log('Cards API response:', data);
       
       if (response.ok) {
         if (Array.isArray(data)) {
@@ -393,7 +390,9 @@ export default function BannersPage() {
         throw new Error(data.message || 'Failed to fetch cards');
       }
     } catch (error) {
-      console.error('Error fetching cards:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching cards:', error);
+      }
       toast.error(`Failed to fetch cards: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToast });
     }
   };
@@ -446,10 +445,9 @@ export default function BannersPage() {
         category: formData.get('category')
       };
 
-      console.log('Submitting card data:', cardData);
+      // Removed debug logs to prevent sensitive data exposure
 
       const url = selectedCard ? `${CARD_API_URL}/${selectedCard.id}` : CARD_API_URL;
-      console.log('Submitting to URL:', url);
 
       const response = await fetch(url, {
         method: selectedCard ? 'PUT' : 'POST',
@@ -461,7 +459,6 @@ export default function BannersPage() {
       });
 
       const data = await response.json();
-      console.log('Card submit response:', data);
 
       if (response.ok) {
         toast.success(`Card ${selectedCard ? 'updated' : 'created'} successfully`, { id: loadingToast });
@@ -474,7 +471,9 @@ export default function BannersPage() {
         throw new Error(data.message || 'Operation failed');
       }
     } catch (error) {
-      console.error('Error submitting card:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error submitting card:', error);
+      }
       toast.error(`Failed to ${selectedCard ? 'update' : 'create'} card: ${error instanceof Error ? error.message : 'Unknown error'}`, { id: loadingToast });
     }
   };

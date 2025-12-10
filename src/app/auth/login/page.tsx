@@ -45,7 +45,11 @@ export default function LoginPage() {
       toast.success(data.message, {
         position: "top-right",
       });
-      router.push(`/auth/otp-verification?tempToken=${username}`);
+      // Store username in sessionStorage instead of URL to avoid exposure
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('otp_username', username);
+      }
+      router.push('/auth/otp-verification');
     } catch (err: any) {
       toast.error(err.message, {
         position: "top-right",

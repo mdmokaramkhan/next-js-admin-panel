@@ -40,7 +40,7 @@ export default function Product() {
   }, [router]);
 
   const handleAddProduct = (newProduct: Product) => {
-    console.log(newProduct);
+    // Removed debug log to prevent sensitive data exposure
     setProducts((prevProducts) =>
       prevProducts.some((prod) => prod.id === newProduct.id)
         ? prevProducts.map((prod) =>

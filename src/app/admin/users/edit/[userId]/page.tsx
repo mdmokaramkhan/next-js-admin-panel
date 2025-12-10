@@ -226,7 +226,7 @@ export default function EditUserPage({ params }: PageProps) {
         dmt_min_bal: parseDecimalValue(formData.dmt_min_bal),
       };
 
-      console.log("Submitting data:", updateData); // Debug log
+      // Removed debug log to prevent sensitive data exposure
 
       const response = await apiRequest(
         `users/${resolvedParams.userId}`,

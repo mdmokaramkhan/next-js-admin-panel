@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, RefreshCcw, History, RotateCcw } from "lucid
 import { Transaction, transactionColumns } from "./columns";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getAuthToken } from "@/utils/cookies";
 import {
   Dialog,
   DialogContent,
@@ -69,9 +70,10 @@ export default function LiveTransactions() {
   };
 
   const initializeSocket = useCallback(() => {
+    const token = getAuthToken();
     const newSocket = io(process.env.NEXT_PUBLIC_API_BASE_URL || "", {
       ...SOCKET_CONFIG,
-      auth: { token: localStorage.getItem('token') }
+      auth: { token: token || '' }
     });
 
     // Socket event handlers

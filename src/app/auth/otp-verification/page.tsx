@@ -29,8 +29,7 @@ function OTPVerificationContent() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const tempToken = searchParams.get("tempToken");
+  const [tempToken, setTempToken] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -39,11 +38,17 @@ function OTPVerificationContent() {
       return;
     }
 
-    if (!tempToken) {
-      toast.error("Invalid session. Please log in again.");
-      router.push("/auth/login");
+    // Get username from sessionStorage instead of URL
+    if (typeof window !== 'undefined') {
+      const storedUsername = sessionStorage.getItem('otp_username');
+      if (storedUsername) {
+        setTempToken(storedUsername);
+      } else {
+        toast.error("Invalid session. Please log in again.");
+        router.push("/auth/login");
+      }
     }
-  }, [tempToken, router]);
+  }, [router]);
 
   const handleVerify = async () => {
     if (!otp || otp.length !== 6) {
@@ -60,6 +65,10 @@ function OTPVerificationContent() {
 
       if (data.token) {
         setAuthToken(data.token);
+        // Clear sessionStorage after successful login
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('otp_username');
+        }
         toast.success("Login successful!");
         router.push("/admin/overview");
       } else {
@@ -74,7 +83,21 @@ function OTPVerificationContent() {
   };
 
   const handleResendOTP = async () => {
-    if (!tempToken) return;
+    if (!tempToken) {
+      // Try to get from sessionStorage
+      if (typeof window !== 'undefined') {
+        const stored = sessionStorage.getItem('otp_username');
+        if (stored) {
+          setTempToken(stored);
+        } else {
+          toast.error("Session expired. Please log in again.");
+          router.push("/auth/login");
+          return;
+        }
+      } else {
+        return;
+      }
+    }
 
     setResending(true);
     try {
