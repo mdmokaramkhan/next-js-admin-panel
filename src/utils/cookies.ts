@@ -5,7 +5,7 @@ export const setAuthToken = (token: string) => {
   Cookies.set("accessToken", token, {
     expires: 7,
     secure: true,
-    sameSite: "Strict",
+    sameSite: "None",
     path: "/",
   });
 };
