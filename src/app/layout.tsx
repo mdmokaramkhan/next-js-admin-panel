@@ -26,7 +26,7 @@ export default function RootLayout({
         {/* Content Security Policy - allows API connections to http://api.spdpay.in */}
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self' https: http://api.spdpay.in http://*.spdpay.in; frame-ancestors 'self';"
+          content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self' https: http://api.spdpay.in http://*.spdpay.in http://localhost:* http://127.0.0.1:*; frame-ancestors 'self';"
         />
         {/* Additional security headers via meta tags */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
